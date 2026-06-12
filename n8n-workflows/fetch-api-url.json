@@ -1,0 +1,63 @@
+{
+  "name": "Fetch Backoffice API URL",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a1b2c3d4-0001-0001-0001-000000000001",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cloudformation.eu-central-1.amazonaws.com/",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "aws",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "Action", "value": "DescribeStacks" },
+            { "name": "StackName", "value": "ApukuskiBackoffice-production" },
+            { "name": "Version", "value": "2010-05-15" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000002",
+      "name": "CloudFormation DescribeStacks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [500, 300],
+      "credentials": {
+        "aws": {
+          "name": "AWS (IAM) account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const xml = $input.first().json.data || $input.first().json;\nconst xmlStr = typeof xml === 'string' ? xml : JSON.stringify(xml);\n\nconst match = xmlStr.match(/BackofficeApiUrl<\\/OutputKey>\\s*<OutputValue>([^<]+)<\\/OutputValue>/);\n\nif (match) {\n  return [{ json: { \n    backofficeApiUrl: match[1],\n    message: '✅ Copy this URL and send it to Claude Code'\n  }}];\n}\n\nreturn [{ json: { \n  error: 'BackofficeApiUrl not found — check stack name or outputs',\n  rawResponse: xmlStr.substring(0, 500)\n}}];"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000003",
+      "name": "Extract URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [750, 300]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "CloudFormation DescribeStacks", "type": "main", "index": 0 }]]
+    },
+    "CloudFormation DescribeStacks": {
+      "main": [[{ "node": "Extract URL", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
