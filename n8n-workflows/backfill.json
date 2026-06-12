@@ -166,12 +166,12 @@
       "position": [1560, 230],
       "parameters": {
         "method": "POST",
-        "url": "https://YOUR_SUPABASE_URL/rest/v1/orders",
+        "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/orders",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "YOUR_SUPABASE_ANON_KEY" },
-            { "name": "Authorization", "value": "Bearer YOUR_SUPABASE_ANON_KEY" },
+            { "name": "apikey", "value": "sb_secret_bo03jV2d5qDF6IlBbDnNmQ_AmxHzGGf" },
+            { "name": "Authorization", "value": "Bearer sb_secret_bo03jV2d5qDF6IlBbDnNmQ_AmxHzGGf" },
             { "name": "Content-Type", "value": "application/json" },
             { "name": "Prefer", "value": "resolution=merge-duplicates,return=minimal" }
           ]
@@ -190,12 +190,12 @@
       "position": [1340, 440],
       "parameters": {
         "method": "POST",
-        "url": "https://YOUR_SUPABASE_URL/rest/v1/routes",
+        "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/routes",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "YOUR_SUPABASE_ANON_KEY" },
-            { "name": "Authorization", "value": "Bearer YOUR_SUPABASE_ANON_KEY" },
+            { "name": "apikey", "value": "sb_secret_bo03jV2d5qDF6IlBbDnNmQ_AmxHzGGf" },
+            { "name": "Authorization", "value": "Bearer sb_secret_bo03jV2d5qDF6IlBbDnNmQ_AmxHzGGf" },
             { "name": "Content-Type", "value": "application/json" },
             { "name": "Prefer", "value": "resolution=merge-duplicates,return=minimal" }
           ]
@@ -214,12 +214,12 @@
       "position": [1780, 300],
       "parameters": {
         "method": "POST",
-        "url": "https://YOUR_SUPABASE_URL/rest/v1/sync_log",
+        "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/sync_log",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "YOUR_SUPABASE_ANON_KEY" },
-            { "name": "Authorization", "value": "Bearer YOUR_SUPABASE_ANON_KEY" },
+            { "name": "apikey", "value": "sb_secret_bo03jV2d5qDF6IlBbDnNmQ_AmxHzGGf" },
+            { "name": "Authorization", "value": "Bearer sb_secret_bo03jV2d5qDF6IlBbDnNmQ_AmxHzGGf" },
             { "name": "Content-Type", "value": "application/json" },
             { "name": "Prefer", "value": "return=minimal" }
           ]
