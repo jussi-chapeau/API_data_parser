@@ -1,0 +1,295 @@
+{
+  "name": "Backfill (manual, full history)",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "id": "aaaaaaaa-0006-0006-0006-000000000001",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "parameters": {}
+    },
+    {
+      "id": "aaaaaaaa-0006-0006-0006-000000000002",
+      "name": "Set Date Range",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "parameters": {
+        "jsCode": "const fromDate = '2024-01-01';\nconst toDate = new Date(Date.now() - 46 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];\nreturn [{ json: { fromDate, toDate } }];"
+      }
+    },
+    {
+      "id": "aaaaaaaa-0006-0006-0006-000000000003",
+      "name": "Split Into 30-Day Chunks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300],
+      "parameters": {
+        "jsCode": "const { fromDate, toDate } = $input.first().json;\n\nconst chunks = [];\nlet current = new Date(fromDate);\nconst end = new Date(toDate);\n\nwhile (current < end) {\n  const chunkFrom = current.toISOString().split('T')[0];\n  const chunkToTs = new Date(current.getTime() + 30 * 24 * 60 * 60 * 1000 - 1);\n  const chunkTo = (chunkToTs > end ? end : chunkToTs).toISOString().split('T')[0];\n  chunks.push({ json: { chunkFrom, chunkTo } });\n  current = new Date(current.getTime() + 30 * 24 * 60 * 60 * 1000);\n}\n\nreturn chunks;"
+      }
+    },
+    {
+      "id": "aaaaaaaa-0006-0006-0006-000000000004",
+      "name": "Fetch Orders",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 160],
+      "parameters": {
+        "method": "GET",
+        "url": "https://qtml5qv6uk.execute-api.eu-central-1.amazonaws.com/production/order",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "from", "value": "={{ $json.chunkFrom }}" },
+            { "name": "to", "value": "={{ $json.chunkTo }}" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "oz6Dcgxn5k3px6a3fN9NU5YHshMuYpxP4NNyMdi4" }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "aaaaaaaa-0006-0006-0006-000000000005",
+      "name": "Fetch Manual Orders",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300],
+      "parameters": {
+        "method": "GET",
+        "url": "https://qtml5qv6uk.execute-api.eu-central-1.amazonaws.com/production/manual-order",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "from", "value": "={{ $('Split Into 30-Day Chunks').item.json.chunkFrom }}" },
+            { "name": "to", "value": "={{ $('Split Into 30-Day Chunks').item.json.chunkTo }}" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "oz6Dcgxn5k3px6a3fN9NU5YHshMuYpxP4NNyMdi4" }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "aaaaaaaa-0006-0006-0006-000000000006",
+      "name": "Fetch Routes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 440],
+      "parameters": {
+        "method": "GET",
+        "url": "https://qtml5qv6uk.execute-api.eu-central-1.amazonaws.com/production/route",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "from", "value": "={{ $('Split Into 30-Day Chunks').item.json.chunkFrom }}" },
+            { "name": "to", "value": "={{ $('Split Into 30-Day Chunks').item.json.chunkTo }}" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "oz6Dcgxn5k3px6a3fN9NU5YHshMuYpxP4NNyMdi4" }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "aaaaaaaa-0006-0006-0006-000000000007",
+      "name": "Merge Orders",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [1120, 230],
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      }
+    },
+    {
+      "id": "aaaaaaaa-0006-0006-0006-000000000008",
+      "name": "Transform Orders",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 230],
+      "parameters": {
+        "jsCode": "function tsToIso(val) {\n  if (val === null || val === undefined || val === '') return null;\n  const n = parseFloat(val);\n  if (isNaN(n)) return null;\n  return new Date(n * 1000).toISOString();\n}\n\nconst results = [];\n\nfor (const item of $input.all()) {\n  const d = item.json;\n\n  const isManual = d.isManual === true || d.isManual === 'true' || (d.customer !== undefined && d.additionalInfo !== undefined);\n\n  const transformed = {\n    order_id: d.orderId,\n    is_manual: isManual,\n    created_at: tsToIso(d.createdAt),\n    organization_name: d.organizationName || null,\n    org_id: d.orgId || null,\n    hub_id: d.hubId || null,\n    order_state: d.orderState || null,\n    order_type: d.orderType || null,\n    first_schedule: tsToIso(d.firstSchedule),\n    schedule: d.schedule || null,\n    content: d.content || null,\n    stops: d.stops || null,\n    charge: d.charge || null,\n    platform_fee: d.platformFee !== undefined && d.platformFee !== null ? Math.round(parseFloat(d.platformFee)) : null,\n    service_fee: d.serviceFee !== undefined && d.serviceFee !== null ? Math.round(parseFloat(d.serviceFee)) : null,\n    route_id: d.routeId || null,\n    commission_rate: d.commissionRate !== undefined ? parseFloat(d.commissionRate) : null,\n    underway_at: tsToIso(d.underwayAt),\n    in_transit_at: tsToIso(d.inTransitAt),\n    delivered_at: tsToIso(d.deliveredAt),\n    review: d.review || null,\n    manual_data: isManual ? { customer: d.customer || null, additionalInfo: d.additionalInfo || null, serviceFeeApplied: d.serviceFeeApplied || null } : null,\n    synced_at: new Date().toISOString()\n  };\n\n  if (transformed.order_id) {\n    results.push({ json: transformed });\n  }\n}\n\nreturn results;"
+      }
+    },
+    {
+      "id": "aaaaaaaa-0006-0006-0006-000000000009",
+      "name": "Transform Routes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 440],
+      "parameters": {
+        "jsCode": "const results = [];\n\nfor (const item of $input.all()) {\n  const d = item.json;\n\n  const transformed = {\n    route_id: d.routeId,\n    date: d.date || null,\n    hub_id: d.hubId || null,\n    partner: d.partner || null,\n    internal_cost: d.internalCost !== undefined && d.internalCost !== null ? Math.round(parseFloat(d.internalCost)) : null,\n    order_ids: d.orderIds !== undefined ? d.orderIds : null,\n    warehouse_order_ids: d.warehouseOrderIds !== undefined ? d.warehouseOrderIds : null,\n    total_sales: d.totalSales !== undefined && d.totalSales !== null ? parseFloat(d.totalSales) : null,\n    synced_at: new Date().toISOString()\n  };\n\n  if (transformed.route_id) {\n    results.push({ json: transformed });\n  }\n}\n\nreturn results;"
+      }
+    },
+    {
+      "id": "aaaaaaaa-0006-0006-0006-000000000010",
+      "name": "Upsert Orders",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 230],
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_SUPABASE_URL/rest/v1/orders",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "YOUR_SUPABASE_ANON_KEY" },
+            { "name": "Authorization", "value": "Bearer YOUR_SUPABASE_ANON_KEY" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "resolution=merge-duplicates,return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $input.all().map(i => i.json) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "aaaaaaaa-0006-0006-0006-000000000011",
+      "name": "Upsert Routes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 440],
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_SUPABASE_URL/rest/v1/routes",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "YOUR_SUPABASE_ANON_KEY" },
+            { "name": "Authorization", "value": "Bearer YOUR_SUPABASE_ANON_KEY" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "resolution=merge-duplicates,return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $input.all().map(i => i.json) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "aaaaaaaa-0006-0006-0006-000000000012",
+      "name": "Log Sync",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1780, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_SUPABASE_URL/rest/v1/sync_log",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "YOUR_SUPABASE_ANON_KEY" },
+            { "name": "Authorization", "value": "Bearer YOUR_SUPABASE_ANON_KEY" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify([{ workflow: 'backfill', started_at: $execution.startedAt, completed_at: new Date().toISOString(), date_range: $('Set Date Range').item.json.fromDate + ' to ' + $('Set Date Range').item.json.toDate, rows_upserted: $('Transform Orders').all().length + $('Transform Routes').all().length, status: 'success', error_message: null }]) }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [{ "node": "Set Date Range", "type": "main", "index": 0 }]
+      ]
+    },
+    "Set Date Range": {
+      "main": [
+        [{ "node": "Split Into 30-Day Chunks", "type": "main", "index": 0 }]
+      ]
+    },
+    "Split Into 30-Day Chunks": {
+      "main": [
+        [
+          { "node": "Fetch Orders", "type": "main", "index": 0 },
+          { "node": "Fetch Manual Orders", "type": "main", "index": 0 },
+          { "node": "Fetch Routes", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Fetch Orders": {
+      "main": [
+        [{ "node": "Merge Orders", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fetch Manual Orders": {
+      "main": [
+        [{ "node": "Merge Orders", "type": "main", "index": 1 }]
+      ]
+    },
+    "Merge Orders": {
+      "main": [
+        [{ "node": "Transform Orders", "type": "main", "index": 0 }]
+      ]
+    },
+    "Transform Orders": {
+      "main": [
+        [{ "node": "Upsert Orders", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fetch Routes": {
+      "main": [
+        [{ "node": "Transform Routes", "type": "main", "index": 0 }]
+      ]
+    },
+    "Transform Routes": {
+      "main": [
+        [{ "node": "Upsert Routes", "type": "main", "index": 0 }]
+      ]
+    },
+    "Upsert Orders": {
+      "main": [
+        [{ "node": "Log Sync", "type": "main", "index": 0 }]
+      ]
+    },
+    "Upsert Routes": {
+      "main": [
+        [{ "node": "Log Sync", "type": "main", "index": 1 }]
+      ]
+    }
+  }
+}
