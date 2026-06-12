@@ -1,6 +1,5 @@
 {
   "name": "Routes Sync (last 45 days)",
-  "active": false,
   "settings": {
     "executionOrder": "v1"
   },
@@ -10,7 +9,10 @@
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
-      "position": [240, 300],
+      "position": [
+        240,
+        300
+      ],
       "parameters": {
         "rule": {
           "interval": [
@@ -27,7 +29,10 @@
       "name": "Set Date Range",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [460, 300],
+      "position": [
+        460,
+        300
+      ],
       "parameters": {
         "jsCode": "const now = new Date();\nconst toDate = now.toISOString().split('T')[0];\nconst fromTs = new Date(now.getTime() - 45 * 24 * 60 * 60 * 1000);\nconst fromDate = fromTs.toISOString().split('T')[0];\nreturn [{ json: { fromDate, toDate } }];"
       }
@@ -37,21 +42,33 @@
       "name": "Fetch Routes",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [680, 300],
+      "position": [
+        680,
+        300
+      ],
       "parameters": {
         "method": "GET",
         "url": "https://qtml5qv6uk.execute-api.eu-central-1.amazonaws.com/production/route",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            { "name": "from", "value": "={{ $json.fromDate }}" },
-            { "name": "to", "value": "={{ $json.toDate }}" }
+            {
+              "name": "start_date",
+              "value": "={{ $json.fromDate }}"
+            },
+            {
+              "name": "end_date",
+              "value": "={{ $json.toDate }}"
+            }
           ]
         },
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "x-api-key", "value": "oz6Dcgxn5k3px6a3fN9NU5YHshMuYpxP4NNyMdi4" }
+            {
+              "name": "x-api-key",
+              "value": "oz6Dcgxn5k3px6a3fN9NU5YHshMuYpxP4NNyMdi4"
+            }
           ]
         },
         "options": {
@@ -68,7 +85,10 @@
       "name": "Transform Routes",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [900, 300],
+      "position": [
+        900,
+        300
+      ],
       "parameters": {
         "jsCode": "const results = [];\n\nfor (const item of $input.all()) {\n  const d = item.json;\n\n  const transformed = {\n    route_id: d.routeId,\n    date: d.date || null,\n    hub_id: d.hubId || null,\n    partner: d.partner || null,\n    internal_cost: d.internalCost !== undefined && d.internalCost !== null ? Math.round(parseFloat(d.internalCost)) : null,\n    order_ids: d.orderIds !== undefined ? d.orderIds : null,\n    warehouse_order_ids: d.warehouseOrderIds !== undefined ? d.warehouseOrderIds : null,\n    total_sales: d.totalSales !== undefined && d.totalSales !== null ? parseFloat(d.totalSales) : null,\n    synced_at: new Date().toISOString()\n  };\n\n  if (transformed.route_id) {\n    results.push({ json: transformed });\n  }\n}\n\nreturn results;"
       }
@@ -78,17 +98,32 @@
       "name": "Upsert Routes",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1120, 300],
+      "position": [
+        1120,
+        300
+      ],
       "parameters": {
         "method": "POST",
         "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/routes",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "sb_secret_bo03jV2d5qDF6IlBbDnNmQ_AmxHzGGf" },
-            { "name": "Authorization", "value": "Bearer sb_secret_bo03jV2d5qDF6IlBbDnNmQ_AmxHzGGf" },
-            { "name": "Content-Type", "value": "application/json" },
-            { "name": "Prefer", "value": "resolution=merge-duplicates,return=minimal" }
+            {
+              "name": "apikey",
+              "value": "SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=minimal"
+            }
           ]
         },
         "sendBody": true,
@@ -102,17 +137,32 @@
       "name": "Log Sync",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1340, 300],
+      "position": [
+        1340,
+        300
+      ],
       "parameters": {
         "method": "POST",
         "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/sync_log",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "sb_secret_bo03jV2d5qDF6IlBbDnNmQ_AmxHzGGf" },
-            { "name": "Authorization", "value": "Bearer sb_secret_bo03jV2d5qDF6IlBbDnNmQ_AmxHzGGf" },
-            { "name": "Content-Type", "value": "application/json" },
-            { "name": "Prefer", "value": "return=minimal" }
+            {
+              "name": "apikey",
+              "value": "SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
           ]
         },
         "sendBody": true,
@@ -125,27 +175,57 @@
   "connections": {
     "Schedule Trigger": {
       "main": [
-        [{ "node": "Set Date Range", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Set Date Range",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Set Date Range": {
       "main": [
-        [{ "node": "Fetch Routes", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Fetch Routes",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Fetch Routes": {
       "main": [
-        [{ "node": "Transform Routes", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Transform Routes",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Transform Routes": {
       "main": [
-        [{ "node": "Upsert Routes", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Upsert Routes",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Upsert Routes": {
       "main": [
-        [{ "node": "Log Sync", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Log Sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   }

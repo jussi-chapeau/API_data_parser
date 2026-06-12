@@ -7,7 +7,10 @@
       "name": "Manual Trigger",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [250, 300]
+      "position": [
+        250,
+        300
+      ]
     },
     {
       "parameters": {
@@ -19,9 +22,18 @@
         "contentType": "form-urlencoded",
         "bodyParameters": {
           "parameters": [
-            { "name": "Action", "value": "DescribeStacks" },
-            { "name": "StackName", "value": "ApukuskiBackoffice-production" },
-            { "name": "Version", "value": "2010-05-15" }
+            {
+              "name": "Action",
+              "value": "DescribeStacks"
+            },
+            {
+              "name": "StackName",
+              "value": "ApukuskiBackoffice-production"
+            },
+            {
+              "name": "Version",
+              "value": "2010-05-15"
+            }
           ]
         },
         "options": {}
@@ -30,7 +42,10 @@
       "name": "CloudFormation DescribeStacks",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [500, 300],
+      "position": [
+        500,
+        300
+      ],
       "credentials": {
         "aws": {
           "name": "AWS (IAM) account"
@@ -39,24 +54,42 @@
     },
     {
       "parameters": {
-        "jsCode": "const data = $input.first().json;\n\n// Try JSON path first (n8n parses XML to JSON automatically)\ntry {\n  const stacks = data?.DescribeStacksResponse?.DescribeStacksResult?.Stacks?.member;\n  const stackArr = Array.isArray(stacks) ? stacks : [stacks];\n  for (const stack of stackArr) {\n    const outputs = stack?.Outputs?.member;\n    const outputArr = Array.isArray(outputs) ? outputs : (outputs ? [outputs] : []);\n    for (const o of outputArr) {\n      if (o?.OutputKey === 'BackofficeApiUrl') {\n        return [{ json: { backofficeApiUrl: o.OutputValue, message: '✅ Copy this URL and send it to Claude Code' } }];\n      }\n    }\n  }\n} catch(e) {}\n\n// Fallback: regex on stringified response\nconst xmlStr = JSON.stringify(data);\nconst match = xmlStr.match(/BackofficeApiUrl.*?OutputValue.*?([^\\\\\"]+api[^\\\\\"]+)/);\nif (match) {\n  return [{ json: { backofficeApiUrl: match[1], message: '✅ Copy this URL and send it to Claude Code' } }];\n}\n\nreturn [{ json: { error: 'BackofficeApiUrl not found', rawKeys: Object.keys(data), rawResponse: JSON.stringify(data).substring(0, 1000) } }];"
+        "jsCode": "const data = $input.first().json;\n\n// Try JSON path first (n8n parses XML to JSON automatically)\ntry {\n  const stacks = data?.DescribeStacksResponse?.DescribeStacksResult?.Stacks?.member;\n  const stackArr = Array.isArray(stacks) ? stacks : [stacks];\n  for (const stack of stackArr) {\n    const outputs = stack?.Outputs?.member;\n    const outputArr = Array.isArray(outputs) ? outputs : (outputs ? [outputs] : []);\n    for (const o of outputArr) {\n      if (o?.OutputKey === 'BackofficeApiUrl') {\n        return [{ json: { backofficeApiUrl: o.OutputValue, message: '\u2705 Copy this URL and send it to Claude Code' } }];\n      }\n    }\n  }\n} catch(e) {}\n\n// Fallback: regex on stringified response\nconst xmlStr = JSON.stringify(data);\nconst match = xmlStr.match(/BackofficeApiUrl.*?OutputValue.*?([^\\\\\"]+api[^\\\\\"]+)/);\nif (match) {\n  return [{ json: { backofficeApiUrl: match[1], message: '\u2705 Copy this URL and send it to Claude Code' } }];\n}\n\nreturn [{ json: { error: 'BackofficeApiUrl not found', rawKeys: Object.keys(data), rawResponse: JSON.stringify(data).substring(0, 1000) } }];"
       },
       "id": "a1b2c3d4-0001-0001-0001-000000000003",
       "name": "Extract URL",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [750, 300]
+      "position": [
+        750,
+        300
+      ]
     }
   ],
   "connections": {
     "Manual Trigger": {
-      "main": [[{ "node": "CloudFormation DescribeStacks", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "CloudFormation DescribeStacks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "CloudFormation DescribeStacks": {
-      "main": [[{ "node": "Extract URL", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Extract URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": false,
   "settings": {
     "executionOrder": "v1"
   }
