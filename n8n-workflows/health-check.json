@@ -1,0 +1,94 @@
+{
+  "name": "Supabase Health Check",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "*/30 * * * *" }]
+        }
+      },
+      "id": "aaaaaaaa-0007-0007-0007-000000000001",
+      "name": "Every 30 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/sync_log?limit=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "SUPABASE_SERVICE_KEY" },
+            { "name": "Authorization", "value": "Bearer SUPABASE_SERVICE_KEY" }
+          ]
+        },
+        "options": {
+          "timeout": 10000,
+          "response": { "response": { "neverError": true, "responseFormat": "text" } }
+        }
+      },
+      "id": "aaaaaaaa-0007-0007-0007-000000000002",
+      "name": "Ping Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const res = $input.first().json;\nconst statusCode = res.$response?.statusCode || 0;\nconst isHealthy = statusCode >= 200 && statusCode < 300;\nreturn [{ json: { isHealthy, statusCode, checkedAt: new Date().toISOString() } }];"
+      },
+      "id": "aaaaaaaa-0007-0007-0007-000000000003",
+      "name": "Check Status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [{ "value1": "={{ $json.isHealthy }}", "value2": false }]
+        }
+      },
+      "id": "aaaaaaaa-0007-0007-0007-000000000004",
+      "name": "Is Down?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://apukuski.app.n8n.cloud/webhook/alert-placeholder",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\n  \"text\": \"🚨 *Supabase is DOWN*\\nStatus: {{ $json.statusCode }}\\nTime: {{ $json.checkedAt }}\\nProject: ybznbfezrdgzgptxkgul\\n\\nCheck: https://supabase.com/dashboard/project/ybznbfezrdgzgptxkgul\"\n}",
+        "options": {}
+      },
+      "id": "aaaaaaaa-0007-0007-0007-000000000005",
+      "name": "Send Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1250, 200]
+    }
+  ],
+  "connections": {
+    "Every 30 Minutes": {
+      "main": [[{ "node": "Ping Supabase", "type": "main", "index": 0 }]]
+    },
+    "Ping Supabase": {
+      "main": [[{ "node": "Check Status", "type": "main", "index": 0 }]]
+    },
+    "Check Status": {
+      "main": [[{ "node": "Is Down?", "type": "main", "index": 0 }]]
+    },
+    "Is Down?": {
+      "main": [
+        [{ "node": "Send Alert", "type": "main", "index": 0 }],
+        []
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" }
+}
