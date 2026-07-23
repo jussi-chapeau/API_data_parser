@@ -225,6 +225,11 @@ A critical issue caused repeated Supabase crashes:
 - [ ] Edge Functions (`n8n-trigger-sync`, `n8n-update-schedule`) need to be deployed to Supabase
 
 ### Documentation
+- [x] `CLAUDE.md` — agent behavior rules (root)
+- [x] `docs/README.md` — documentation index
+- [x] `docs/GOTCHAS.md` — hard-won lessons
+- [x] `docs/DECISIONS.md` — design decision log
+- [x] `CHANGELOG.md` — deploy log
 - [x] `docs/supabase-api.md` — API reference for colleagues
 - [x] `N8N_WORKFLOW_IDS.md` — all workflow IDs and schedules
 - [x] This document

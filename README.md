@@ -2,6 +2,14 @@
 
 Automated data synchronization pipeline that extracts data from the Chapeau Backoffice API and loads it into Supabase for analytics and dashboarding.
 
+## AI / contributor setup
+
+- **Start here:** [`CLAUDE.md`](CLAUDE.md) — agent behavior rules (read every session)
+- **Docs index:** [`docs/README.md`](docs/README.md)
+- **Architecture:** [`docs/project-architecture.md`](docs/project-architecture.md)
+- **Supabase queries:** [`docs/supabase-api.md`](docs/supabase-api.md)
+- **Deploy log:** [`CHANGELOG.md`](CHANGELOG.md)
+
 ## Architecture
 
 ```
