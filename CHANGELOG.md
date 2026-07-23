@@ -4,9 +4,18 @@ One entry per deploy to production — date, what shipped, why it matters. Detai
 
 ## 2026-07-23
 
-- **Manual-order VAT total transform** — N8N Transform Orders now writes
-  `manual_data.total_incl_vat_*` from `charge.charge`; platform/manual financial semantics
-  documented. Enables consistent Lovable display for manual order totals.
+- **Manual-order VAT total transform** — N8N Transform Orders writes
+  `manual_data.total_incl_vat_*` from `charge.charge` (handles `203,82 €` format); platform
+  fees null for manual rows. Supabase backfill script for existing rows.
+
+- **Webhook triggers on sync workflows** — All 6 canonical workflows expose POST webhooks
+  (`orders-hot-sync`, etc.) for Lovable Run Now via Edge Function.
+
+- **Edge Function deploy script** — `scripts/deploy-edge-functions.sh` + `supabase/config.toml`
+  (requires `SUPABASE_ACCESS_TOKEN`).
+
+- **Financial reconciliation script** — `scripts/reconcile_airtable_financials.py` compares
+  Airtable settlement CSV vs API snapshot.
 
 - **Claude/agent setup integrated** — Root `CLAUDE.md`, `docs/GOTCHAS.md`, `docs/DECISIONS.md`,
   `docs/README.md` added; template archived under `docs/archive/`.

@@ -170,6 +170,23 @@
         "jsonBody": "={{ JSON.stringify([{ workflow: 'routes-sync', started_at: $execution.startedAt, completed_at: new Date().toISOString(), date_range: $('Set Date Range').item.json.fromDate + ' to ' + $('Set Date Range').item.json.toDate, rows_upserted: $('Transform Routes').all().length, status: 'success', error_message: null }]) }}",
         "options": {}
       }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "routes-sync",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "ff3fecf4-32ae-4800-a56c-e856cda16748",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        480
+      ],
+      "webhookId": "ff3fecf4-32ae-4800-a56c-e856cda16748"
     }
   ],
   "connections": {
@@ -222,6 +239,17 @@
         [
           {
             "node": "Log Sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Date Range",
             "type": "main",
             "index": 0
           }

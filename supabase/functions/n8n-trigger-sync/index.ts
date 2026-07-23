@@ -1,7 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const N8N_API_URL = Deno.env.get("N8N_API_URL")!;
-const N8N_API_KEY = Deno.env.get("N8N_API_KEY")!;
+const N8N_WEBHOOK_BASE =
+  Deno.env.get("N8N_WEBHOOK_BASE") ?? "https://apukuski.app.n8n.cloud/webhook";
+
+/** workflowId -> production webhook path (must match N8N Webhook Trigger nodes) */
+const WEBHOOK_PATHS: Record<string, string> = {
+  "9hWlvNyCs8HmfZly": "orders-hot-sync",
+  "CcOBd7IELOnbonYL": "orders-warm-sync",
+  "QKbM3UvkJ8Yjkhb1": "orders-cool-sync",
+  "cgEcgz89U6Rp7UJH": "routes-sync",
+  "D62F3xpZ443ZFUwa": "reference-sync",
+  "JH2On4vSuJidzbyU": "backfill-sync",
+};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,55 +29,74 @@ serve(async (req) => {
     if (!workflowId) {
       return new Response(
         JSON.stringify({ error: "workflowId is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
-    // Fetch workflow to find the webhook or trigger node
-    const getRes = await fetch(`${N8N_API_URL}/workflows/${workflowId}`, {
-      headers: { "X-N8N-API-KEY": N8N_API_KEY },
-    });
-
-    if (!getRes.ok) {
+    const webhookPath = WEBHOOK_PATHS[workflowId];
+    if (!webhookPath) {
       return new Response(
-        JSON.stringify({ error: "Workflow not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          error: "Unknown workflowId",
+          supported: Object.keys(WEBHOOK_PATHS),
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
-    // Deactivate, then re-activate to force immediate run isn't reliable.
-    // Instead POST to the N8N executions endpoint with the workflow ID.
-    const execRes = await fetch(`${N8N_API_URL}/executions`, {
+    const webhookUrl = `${N8N_WEBHOOK_BASE}/${webhookPath}`;
+    const execRes = await fetch(webhookUrl, {
       method: "POST",
-      headers: {
-        "X-N8N-API-KEY": N8N_API_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ workflowId }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source: "lovable", workflowId }),
     });
 
-    const execData = await execRes.json();
+    const bodyText = await execRes.text();
+    let detail: unknown = bodyText;
+    try {
+      detail = JSON.parse(bodyText);
+    } catch {
+      // keep raw text
+    }
 
     if (!execRes.ok) {
-      // N8N cloud may not support POST /executions — fall back to reporting
       return new Response(
         JSON.stringify({
           success: false,
-          message: "Manual trigger not supported via API on N8N cloud — use webhook trigger",
-          detail: execData,
+          workflowId,
+          webhookUrl,
+          status: execRes.status,
+          detail,
         }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
     return new Response(
-      JSON.stringify({ success: true, executionId: execData.id, workflowId }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({
+        success: true,
+        workflowId,
+        webhookUrl,
+        detail,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
     return new Response(
       JSON.stringify({ error: String(e) }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   }
 });

@@ -241,10 +241,9 @@ A critical issue caused repeated Supabase crashes:
 | Issue | Priority | Owner |
 |---|---|---|
 | `/route` Lambda returns error — routes table empty | High | Backend team |
-| Deploy Edge Functions to Supabase (`supabase functions deploy`) | Medium | DevOps |
-| Re-activate all 6 canonical workflows after stability fix | High | Done via CLI Claude |
-| Lovable "Run Now" buttons need webhook trigger nodes added to workflows | Medium | N8N config |
-| Install Claude Code on MacBook-Pro-2 (`sudo npm install -g @anthropic-ai/claude-code`) | Low | Local setup |
+| Deploy Edge Functions to Supabase (`./scripts/deploy-edge-functions.sh`) | Medium | Needs `SUPABASE_ACCESS_TOKEN` |
+| Backoffice API intermittent 500/timeout — blocks N8N backfill re-run | Medium | Backend team |
+| Lovable "Run Now" buttons | Medium | Webhooks live; deploy Edge Functions to wire up |
 
 ---
 

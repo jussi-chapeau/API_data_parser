@@ -11,7 +11,7 @@ Last verified: 2026-06-26
 | Orders Cool Sync (days 15-45) | QKbM3UvkJ8Yjkhb1 | Daily 03:00 | Active |
 | Routes Sync (last 45 days) | cgEcgz89U6Rp7UJH | Daily 04:00 | Active |
 | Reference Data Sync (hubs weekly) | D62F3xpZ443ZFUwa | Weekly Mon 02:00 | Active |
-| Backfill (manual, full history) | JH2On4vSuJidzbyU | Manual | Inactive |
+| Backfill (manual, full history) | JH2On4vSuJidzbyU | Manual + webhook | Active |
 
 ## Monitoring Workflows
 

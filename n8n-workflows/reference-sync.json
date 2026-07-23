@@ -144,6 +144,23 @@
         "jsonBody": "={{ JSON.stringify([{ workflow: 'reference-sync', started_at: $execution.startedAt, completed_at: new Date().toISOString(), date_range: 'full', rows_upserted: $('Transform Hubs').all().length, status: 'success', error_message: null }]) }}",
         "options": {}
       }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "reference-sync",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "88b7948f-0803-4e06-86de-cf948eab3965",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        480
+      ],
+      "webhookId": "88b7948f-0803-4e06-86de-cf948eab3965"
     }
   ],
   "connections": {
@@ -185,6 +202,17 @@
         [
           {
             "node": "Log Sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Hubs",
             "type": "main",
             "index": 0
           }

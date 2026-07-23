@@ -1,0 +1,11 @@
+# Supabase local/deploy config — project ref matches production
+project_id = "ybznbfezrdgzgptxkgul"
+
+[api]
+enabled = true
+
+[functions.n8n-trigger-sync]
+verify_jwt = false
+
+[functions.n8n-update-schedule]
+verify_jwt = false
