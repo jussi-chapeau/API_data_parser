@@ -141,10 +141,35 @@ Schedule Trigger
 ### Key Data Transformations (in N8N Code nodes)
 
 - **Unix timestamps** → multiply by 1000 → `new Date(ts * 1000).toISOString()` (Backoffice API returns float seconds)
-- **Fees** → `Math.round(parseFloat(fee) * 100)` → stored as integer cents
-- **`/order` items** → `is_manual=false`, `manual_data=null`
-- **`/manual-order` items** → `is_manual=true`, `manual_data={customer, additionalInfo, serviceFeeApplied}`
+- **Platform fees (`/order`)** → API values are **excl. VAT** (net). Store top-level `platformFee` / `serviceFee` as integer cents in `platform_fee` / `service_fee`. Keep full `charge` breakdown JSON as-is.
+- **Manual totals (`/manual-order`)** → API provides **no fee breakdown**. Only usable price is `charge.charge`, a euro string **including VAT**. Use as-is (accepted interim, confirmed with backend/ops 2026-07-23). Do not reverse-engineer net fees or margin from this field.
+- **`/order` items** → `is_manual=false`, `manual_data=null`, `platform_fee`/`service_fee` from API
+- **`/manual-order` items** → `is_manual=true`, `platform_fee=null`, `service_fee=null`, and:
+  ```
+  manual_data = {
+    customer,
+    additionalInfo,
+    serviceFeeApplied,
+    payment_method: charge.paymentMethod,
+    total_incl_vat_eur: parseFloat(charge.charge),
+    total_incl_vat_cents: Math.round(parseFloat(charge.charge) * 100),
+    price_basis: "gross_incl_vat",
+    source_field: "charge.charge"
+  }
+  ```
 - All writes use `Prefer: resolution=merge-duplicates` header (Supabase upsert on PK conflict)
+
+### Financial fields: platform vs manual
+
+| | Platform (`is_manual=false`) | Manual (`is_manual=true`) |
+|---|---|---|
+| Source endpoint | `/order` | `/manual-order` |
+| Price fields | Full `charge` breakdown + top-level fees | `charge.charge` total only |
+| Tax basis | Fees excl. VAT (net) | Total **incl. VAT** (gross) |
+| Partner / margin calc via API | Possible when breakdown present | **Not available** — ops calculates in Airtable |
+| Lovable display rule | Use `platform_fee` / `service_fee` / `charge` | Use `manual_data.total_incl_vat_cents` (or raw `charge.charge`) |
+
+Details and bug history: `data/AWS_API_charge_object_bug_report.md`.
 
 ---
 
@@ -235,10 +260,12 @@ A critical issue caused repeated Supabase crashes:
 
 | Issue | Priority | Owner |
 |---|---|---|
-| `/route` Lambda returns error — routes table empty | High | Backend team |
+| `/route` Lambda returns error / timeout — routes table empty | High | Backend team |
 | Deploy Edge Functions to Supabase (`supabase functions deploy`) | Medium | DevOps |
 | Re-activate all 6 canonical workflows after stability fix | High | Done via CLI Claude |
 | Lovable "Run Now" buttons need webhook trigger nodes added to workflows | Medium | N8N config |
+| N8N transform: populate `manual_data.total_incl_vat_*` from `charge.charge` | Done in repo JSON | Re-import/update live N8N workflows |
+| `/manual-order` full charge breakdown | Low (accepted interim) | Backend / later |
 | Install Claude Code on MacBook-Pro-2 (`sudo npm install -g @anthropic-ai/claude-code`) | Low | Local setup |
 
 ---

@@ -232,8 +232,9 @@ function tsToIso(val) {
 |-----------|--------|-------|
 | Orders sync | ✅ Working | 9,500+ orders synced |
 | Hubs sync | ✅ Working | 98 hubs synced |
-| Routes sync | ⚠️ Blocked | Backoffice API returning Lambda Error |
+| Routes sync | ⚠️ Blocked | `/route` Lambda timeout / error |
 | Backfill | ✅ Complete | Historical data from 2024-01-01 |
+| Manual order pricing | ✅ Accepted interim | Use `charge.charge` VAT-inclusive total as-is; no API breakdown (see `data/AWS_API_charge_object_bug_report.md`) |
 
 ## N8N Workflow IDs (Production)
 
