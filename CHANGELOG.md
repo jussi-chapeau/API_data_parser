@@ -2,6 +2,12 @@
 
 One entry per deploy to production — date, what shipped, why it matters. Detail in `git log`.
 
+## 2026-07-24
+
+- **`orders.origin` column** — Migration `002_add_origin_to_orders.sql`; N8N Transform Orders
+  maps platform order source (`app`, `AVY#{id}`). Manual orders store null. Backfill script:
+  `scripts/backfill_order_origin.py`.
+
 ## 2026-07-23
 
 - **Manual-order VAT total transform** — N8N Transform Orders writes

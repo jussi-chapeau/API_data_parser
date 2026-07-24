@@ -38,6 +38,10 @@ simultaneously crashed Supabase (July 2026). Use canonical workflow IDs in
 `DELIVERED` state or delivery timestamps — do not expect manual orders in delivered-by-state
 counts.
 
+**`origin` is platform-order only.** Backoffice API adds top-level `origin` on `/order` rows
+(e.g. `app`, `AVY#{id}`) from July 2026 onward. `/manual-order` has no `origin` field — store
+null in Supabase for `is_manual=true`.
+
 **Commission rate drift.** API `commissionRate` may not match Airtable settlement rate for
 some partners (e.g. 0.25 vs 0.26). Settlement source of truth for rev-share is Airtable until
 backend aligns rates.

@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS orders (
   hub_id TEXT,
   order_state TEXT,
   order_type TEXT,
+  origin TEXT,
   first_schedule TIMESTAMPTZ,
   schedule JSONB,
   content JSONB,

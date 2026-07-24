@@ -71,7 +71,7 @@ All tables live in Supabase PostgreSQL. Migration file: `supabase/migrations/001
 Primary data table. Covers both standard API orders (`is_manual=false`) and manual orders (`is_manual=true`).
 
 - **Primary key:** `order_id` (text)
-- Key columns: `organization_name`, `org_id`, `hub_id`, `order_state`, `order_type`
+- Key columns: `organization_name`, `org_id`, `hub_id`, `order_state`, `order_type`, `origin`
 - Timestamps: `created_at`, `first_schedule`, `underway_at`, `in_transit_at`, `delivered_at`
 - Financials: `platform_fee` (integer cents), `service_fee` (integer cents), `commission_rate` (float)
 - JSONB blobs: `schedule`, `content`, `charge`, `review`, `manual_data`

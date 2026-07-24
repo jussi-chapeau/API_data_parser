@@ -72,6 +72,7 @@ for (const item of $input.all()) {
     hub_id: d.hubId || null,
     order_state: d.orderState || null,
     order_type: d.orderType || null,
+    origin: isManual ? null : d.origin || null,
     first_schedule: tsToIso(d.firstSchedule),
     schedule: d.schedule || null,
     content: d.content || null,
@@ -194,6 +195,7 @@ def main() -> None:
                 "file": rel_path,
                 "repo_updated": changed,
                 "live_has_manual_pricing": "total_incl_vat_cents" in code,
+                "live_has_origin": "origin:" in code or "origin:" in code.replace(" ", ""),
             }
         )
 

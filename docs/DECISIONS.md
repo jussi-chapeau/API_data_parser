@@ -26,6 +26,16 @@ in `manual_data` with `price_basis: gross_incl_vat`.
 
 ---
 
+## 2026-07-24 — Store platform order `origin` in Supabase
+
+**Decided:** Add nullable `orders.origin` text column. Map from Backoffice `/order` only;
+manual orders (`is_manual=true`) always null.
+
+**Why:** Channel attribution (`app` vs integration sources) needed for dashboard analytics.
+Field absent from API before July 2026 and never on `/manual-order`.
+
+---
+
 ## 2026-06 — Tiered order sync (hot / warm / cool)
 
 **Decided:** Three schedules for orders (hourly 3d, 6h days 4–14, daily days 15–45) instead of

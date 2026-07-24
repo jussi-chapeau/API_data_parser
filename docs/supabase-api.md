@@ -47,6 +47,7 @@ One row per order. Covers both standard (`is_manual=false`) and manual orders (`
 | `hub_id` | text | Hub FK → `hubs.hub_id` |
 | `order_state` | text | e.g. `delivered`, `cancelled` |
 | `order_type` | text | Order classification |
+| `origin` | text | Order source channel (platform orders only). e.g. `app`, `AVY#{id}`. null for manual orders and pre-July-2026 rows. |
 | `first_schedule` | timestamptz | First scheduled delivery time |
 | `schedule` | jsonb | Full schedule object |
 | `content` | jsonb | Order items/contents |
