@@ -50,7 +50,10 @@ def main() -> int:
     # Management API runs one statement at a time for some setups; split on semicolons.
     statements = [s.strip() for s in sql.split(";") if s.strip() and not s.strip().startswith("--")]
     results = []
-    for stmt in statements:
+    import time
+    for i, stmt in enumerate(statements):
+        if i:
+            time.sleep(1)
         try:
             results.append({"sql": stmt[:80], "result": run_query(token, stmt)})
         except urllib.error.HTTPError as e:
