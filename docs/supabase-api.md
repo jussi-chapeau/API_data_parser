@@ -51,18 +51,61 @@ One row per order. Covers both standard (`is_manual=false`) and manual orders (`
 | `first_schedule` | timestamptz | First scheduled delivery time |
 | `schedule` | jsonb | Full schedule object |
 | `content` | jsonb | Order items/contents |
-| `stops` | text | Number of stops |
-| `charge` | jsonb | Full charge breakdown object |
-| `platform_fee` | integer | Platform fee in **cents** |
-| `service_fee` | integer | Service fee in **cents** |
+| `stops` | text | **Free-text address string, not a count.** Holds a single location (usually pickup) plus occasional operator notes. No structured delivery address exists in the API — ~59% of rows contain no postcode. Do not use for geographic joins; reconcile by `order_id`. |
+| `charge` | jsonb | Charge object from API — **shape differs for platform vs manual** (see below) |
+| `platform_fee` | integer | Platform fee in **cents, excl. VAT** — populated for platform orders only; `null` for manual |
+| `service_fee` | integer | Service fee in **cents, excl. VAT** — populated for platform orders only; `null` for manual |
 | `route_id` | text | Route FK → `routes.route_id` |
 | `commission_rate` | float | Commission rate (e.g. 0.15 = 15%) |
 | `underway_at` | timestamptz | When courier went underway |
 | `in_transit_at` | timestamptz | When order entered transit |
 | `delivered_at` | timestamptz | Delivery completion time |
 | `review` | jsonb | Customer review object |
-| `manual_data` | jsonb | Manual order metadata (customer, additionalInfo, serviceFeeApplied) |
+| `manual_data` | jsonb | Manual order metadata + interim total (see below) |
 | `synced_at` | timestamptz | Last time this row was written by N8N |
+
+#### Charge / pricing: platform vs manual (important for Lovable)
+
+| | Platform (`is_manual=false`) | Manual (`is_manual=true`) |
+|---|---|---|
+| `charge` | Full breakdown (`workPrice`, `hubDrivePrice`, `platformFee`, …) | `{ paymentMethod, charge }` only |
+| Usable total | Derive from breakdown / fee fields | `charge.charge` = **gross total incl. VAT** (euro string) |
+| `platform_fee` / `service_fee` | Net cents from API | Always `null` |
+| Settlement via API | Possible | **Not available** — ops calculates in Airtable |
+
+**Accepted interim rule (2026-07-23):** for manual orders, use the VAT-inclusive total as-is. Do not invent a fee breakdown.
+
+Normalized total for consumers should live in `manual_data`:
+
+```json
+{
+  "customer": "...",
+  "additionalInfo": "...",
+  "serviceFeeApplied": true,
+  "payment_method": "invoice",
+  "total_incl_vat_eur": 323.40,
+  "total_incl_vat_cents": 32340,
+  "price_basis": "gross_incl_vat",
+  "source_field": "charge.charge"
+}
+```
+
+**Lovable display helpers:**
+
+```sql
+-- Manual order gross total (euros)
+select order_id,
+       (manual_data->>'total_incl_vat_cents')::int / 100.0 as total_incl_vat_eur
+from orders
+where is_manual = true;
+
+-- Fallback if transform not yet deployed: parse raw charge.charge
+select order_id,
+       (charge->>'charge')::numeric as total_incl_vat_eur
+from orders
+where is_manual = true
+  and charge ? 'charge';
+```
 
 ### `routes`
 
@@ -223,11 +266,22 @@ for o in orders:
 ## Notes
 
 - **Fees are stored in cents** (integer). Divide by 100 for euro values.
+- **Do not mix tax bases:** platform `platform_fee` / `service_fee` are **excl. VAT**; manual `charge.charge` / `manual_data.total_incl_vat_*` are **incl. VAT**.
 - **Timestamps** are ISO 8601 UTC. Convert to local time using the hub's `tz` field.
-- **JSONB columns** (`schedule`, `content`, `charge`, `manual_data`, etc.) contain nested objects from the Backoffice API — structure may vary by order type.
+- **JSONB columns** (`schedule`, `content`, `charge`, `manual_data`, etc.) contain nested objects from the Backoffice API — structure varies by `is_manual`.
 - **Data freshness:**
   - Last 3 days: refreshed hourly
   - Days 4–14: refreshed every 6 hours
   - Days 15–45: refreshed daily at 03:30
   - Hubs: refreshed weekly Monday 02:00
-- **Row count:** ~9,500+ orders, 98 hubs as of July 2026.
+- **Row count:** ~11,000 orders, 99 hubs as of 29 July 2026.
+- **No end-customer name on platform orders.** `/order` rows have no customer field at
+  all (0 of 1,385 sampled) — `organization_name` is the hub/partner, not the customer.
+  Only manual orders carry customer name/email/phone. Customer-name lookups therefore
+  only ever hit manual orders.
+- **Every order has a schedule.** Of 1,900 orders sampled (Apr–Jul 2026) only 1 lacked
+  `first_schedule`, and `schedule` always holds exactly two entries (window start/end).
+  There is no unscheduled or pending state, so "sold but not yet scheduled" gigs do not
+  appear here at all — they live in the Offers layer until a date is set. Far-future
+  bookings are visible: 71 were scheduled 31+ days out, longest 87 days.
+- Full manual-order charge decision history: `data/AWS_API_charge_object_bug_report.md`.

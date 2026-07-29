@@ -141,10 +141,35 @@ Schedule Trigger
 ### Key Data Transformations (in N8N Code nodes)
 
 - **Unix timestamps** → multiply by 1000 → `new Date(ts * 1000).toISOString()` (Backoffice API returns float seconds)
-- **Fees** → `Math.round(parseFloat(fee) * 100)` → stored as integer cents
-- **`/order` items** → `is_manual=false`, `manual_data=null`
-- **`/manual-order` items** → `is_manual=true`, `manual_data={customer, additionalInfo, serviceFeeApplied}`
+- **Platform fees (`/order`)** → API values are **excl. VAT** (net). Store top-level `platformFee` / `serviceFee` as integer cents in `platform_fee` / `service_fee`. Keep full `charge` breakdown JSON as-is.
+- **Manual totals (`/manual-order`)** → API provides **no fee breakdown**. Only usable price is `charge.charge`, a euro string **including VAT**. Use as-is (accepted interim, confirmed with backend/ops 2026-07-23). Do not reverse-engineer net fees or margin from this field.
+- **`/order` items** → `is_manual=false`, `manual_data=null`, `platform_fee`/`service_fee` from API
+- **`/manual-order` items** → `is_manual=true`, `platform_fee=null`, `service_fee=null`, and:
+  ```
+  manual_data = {
+    customer,
+    additionalInfo,
+    serviceFeeApplied,
+    payment_method: charge.paymentMethod,
+    total_incl_vat_eur: parseFloat(charge.charge),
+    total_incl_vat_cents: Math.round(parseFloat(charge.charge) * 100),
+    price_basis: "gross_incl_vat",
+    source_field: "charge.charge"
+  }
+  ```
 - All writes use `Prefer: resolution=merge-duplicates` header (Supabase upsert on PK conflict)
+
+### Financial fields: platform vs manual
+
+| | Platform (`is_manual=false`) | Manual (`is_manual=true`) |
+|---|---|---|
+| Source endpoint | `/order` | `/manual-order` |
+| Price fields | Full `charge` breakdown + top-level fees | `charge.charge` total only |
+| Tax basis | Fees excl. VAT (net) | Total **incl. VAT** (gross) |
+| Partner / margin calc via API | Possible when breakdown present | **Not available** — ops calculates in Airtable |
+| Lovable display rule | Use `platform_fee` / `service_fee` / `charge` | Use `manual_data.total_incl_vat_cents` (or raw `charge.charge`) |
+
+Details and bug history: `data/AWS_API_charge_object_bug_report.md`.
 
 ---
 
@@ -213,7 +238,39 @@ The Lovable app uses the Supabase anon key (safe for frontend). Sensitive operat
 - [x] Slack alerts configured to `#tech-alerts-sos`
 - [x] Error handler workflow connected to all sync workflows
 
-### Stability Fix (July 2026)
+### Sync Outage Fix (29 July 2026)
+Every order sync had been failing since ~24 July. Three stacked defects in the
+shared `Fetch Orders` + `Fetch Manual Orders` → `Merge` → `Transform` → `Upsert` chain:
+
+1. **Dead Merge parameter.** Nodes are `typeVersion 3` but carried the v2 key
+   `combinationMode`. v3 ignores it, falls back to match-by-fields, and errors with
+   `You need to define at least one pair of fields in "Fields to Match"`. Every other
+   Merge node in the n8n account already used the current key — these four were the
+   only stragglers.
+2. **Wrong merge mode (silent data corruption).** `mode: combine` pairs items
+   *positionally*, so output truncated to the shorter input (527 → 142) and merged
+   platform-order fields into manual-order records. Correct mode is **`append`**.
+   Verified afterwards: 0 manual rows carry `charge.vatPrice` or `platform_fee`.
+3. **Bulk nodes lacked `executeOnce`.** `Upsert Orders` / `Log Sync` build their body
+   from `$input.all()`, so one request already holds every row — but n8n ran them once
+   per item, re-serialising the whole array each time. At ~500 items this produced
+   `possible out-of-memory issue`.
+
+`orders-cool` additionally routes upserts through a **Loop Over Items** node
+(batch 100), because a single ~500-row request exceeded what the micro instance
+would accept (Cloudflare 522).
+
+Repairing this involved repeated sync runs that overloaded Supabase and took the
+project down for ~25 minutes. When re-running syncs after a fix, trigger **one**
+workflow at a time and confirm it succeeds before the next.
+
+Post-fix verification (all match live Backoffice API):
+
+| Window | Supabase | API truth |
+|---|---|---|
+| June 2026 | 553 (424 platform / 129 manual) | 553 / 424 / 129 |
+
+### Stability Fix (earlier, July 2026)
 A critical issue caused repeated Supabase crashes:
 - **Root cause:** Duplicate workflows (2x Routes Sync, 2x Orders Hot) running simultaneously caused lock contention
 - **Secondary cause:** `reference-sync` and `routes-sync` had literal `SUPABASE_SERVICE_KEY` placeholder instead of the real key, generating 401 errors on every write
@@ -240,10 +297,14 @@ A critical issue caused repeated Supabase crashes:
 
 | Issue | Priority | Owner |
 |---|---|---|
-| `/route` Lambda returns error — routes table empty | High | Backend team |
-| Deploy Edge Functions to Supabase (`./scripts/deploy-edge-functions.sh`) | Medium | Needs `SUPABASE_ACCESS_TOKEN` |
+| `/route` Lambda returns error / timeout — routes table empty | High | Backend team |
+| Deploy Edge Functions to Supabase (`./scripts/deploy-edge-functions.sh`) | Done | — |
+| Re-activate all 6 canonical workflows after stability fix | High | Done via CLI Claude |
 | Backoffice API intermittent 500/timeout — blocks N8N backfill re-run | Medium | Backend team |
-| Lovable "Run Now" buttons | Medium | Webhooks live; deploy Edge Functions to wire up |
+| Lovable "Run Now" buttons — webhook trigger nodes + Edge Functions now in repo/deployed | Medium | Re-import updated workflow JSON to live N8N |
+| N8N transform: populate `manual_data.total_incl_vat_*` from `charge.charge` | Done in repo JSON | Re-import/update live N8N workflows |
+| `/manual-order` full charge breakdown | Low (accepted interim) | Backend / later |
+| Install Claude Code on MacBook-Pro-2 (`sudo npm install -g @anthropic-ai/claude-code`) | Low | Local setup |
 
 ---
 
