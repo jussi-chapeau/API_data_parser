@@ -133,8 +133,7 @@
         300
       ],
       "parameters": {
-        "mode": "combine",
-        "combinationMode": "mergeByPosition",
+        "mode": "append",
         "options": {}
       }
     },
@@ -188,7 +187,8 @@
         "specifyBody": "json",
         "jsonBody": "={{ $input.all().map(i => i.json) }}",
         "options": {}
-      }
+      },
+      "executeOnce": true
     },
     {
       "id": "aaaaaaaa-0001-0001-0001-000000000008",
@@ -227,7 +227,8 @@
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify([{ workflow: 'orders-hot', started_at: $execution.startedAt, completed_at: new Date().toISOString(), date_range: $('Set Date Range').item.json.fromDate + ' to ' + $('Set Date Range').item.json.toDate, rows_upserted: $('Transform Orders').all().length, status: 'success', error_message: null }]) }}",
         "options": {}
-      }
+      },
+      "executeOnce": true
     }
   ],
   "connections": {

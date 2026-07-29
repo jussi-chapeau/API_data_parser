@@ -133,8 +133,7 @@
         300
       ],
       "parameters": {
-        "mode": "combine",
-        "combinationMode": "mergeByPosition",
+        "mode": "append",
         "options": {}
       }
     },
@@ -188,7 +187,8 @@
         "specifyBody": "json",
         "jsonBody": "={{ $input.all().map(i => i.json) }}",
         "options": {}
-      }
+      },
+      "executeOnce": true
     },
     {
       "id": "aaaaaaaa-0003-0003-0003-000000000008",
@@ -227,7 +227,22 @@
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify([{ workflow: 'orders-cool', started_at: $execution.startedAt, completed_at: new Date().toISOString(), date_range: $('Set Date Range').item.json.fromDate + ' to ' + $('Set Date Range').item.json.toDate, rows_upserted: $('Transform Orders').all().length, status: 'success', error_message: null }]) }}",
         "options": {}
-      }
+      },
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "batchSize": 100,
+        "options": {}
+      },
+      "id": "536c9df6-49a8-494c-a15e-79ee2b91740e",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1300,
+        300
+      ]
     }
   ],
   "connections": {
@@ -295,7 +310,7 @@
       "main": [
         [
           {
-            "node": "Upsert Orders",
+            "node": "Loop Over Items",
             "type": "main",
             "index": 0
           }
@@ -306,7 +321,25 @@
       "main": [
         [
           {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
             "node": "Log Sync",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upsert Orders",
             "type": "main",
             "index": 0
           }
