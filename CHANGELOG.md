@@ -2,6 +2,13 @@
 
 One entry per deploy to production — date, what shipped, why it matters. Detail in `git log`.
 
+## 2026-07-29
+
+- **N8N API key rotated** — New key issued in N8N Cloud; updated in local
+  `.claude/settings.json` (gitignored) and Supabase Edge Function secrets via
+  `scripts/deploy-edge-functions.sh`. Old key revoked after verifying
+  `n8n-trigger-sync` / `n8n-update-schedule` still authenticate.
+
 ## 2026-07-24
 
 - **`orders.origin` column** — Migration `002_add_origin_to_orders.sql`; N8N Transform Orders
