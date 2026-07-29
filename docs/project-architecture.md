@@ -238,7 +238,39 @@ The Lovable app uses the Supabase anon key (safe for frontend). Sensitive operat
 - [x] Slack alerts configured to `#tech-alerts-sos`
 - [x] Error handler workflow connected to all sync workflows
 
-### Stability Fix (July 2026)
+### Sync Outage Fix (29 July 2026)
+Every order sync had been failing since ~24 July. Three stacked defects in the
+shared `Fetch Orders` + `Fetch Manual Orders` → `Merge` → `Transform` → `Upsert` chain:
+
+1. **Dead Merge parameter.** Nodes are `typeVersion 3` but carried the v2 key
+   `combinationMode`. v3 ignores it, falls back to match-by-fields, and errors with
+   `You need to define at least one pair of fields in "Fields to Match"`. Every other
+   Merge node in the n8n account already used the current key — these four were the
+   only stragglers.
+2. **Wrong merge mode (silent data corruption).** `mode: combine` pairs items
+   *positionally*, so output truncated to the shorter input (527 → 142) and merged
+   platform-order fields into manual-order records. Correct mode is **`append`**.
+   Verified afterwards: 0 manual rows carry `charge.vatPrice` or `platform_fee`.
+3. **Bulk nodes lacked `executeOnce`.** `Upsert Orders` / `Log Sync` build their body
+   from `$input.all()`, so one request already holds every row — but n8n ran them once
+   per item, re-serialising the whole array each time. At ~500 items this produced
+   `possible out-of-memory issue`.
+
+`orders-cool` additionally routes upserts through a **Loop Over Items** node
+(batch 100), because a single ~500-row request exceeded what the micro instance
+would accept (Cloudflare 522).
+
+Repairing this involved repeated sync runs that overloaded Supabase and took the
+project down for ~25 minutes. When re-running syncs after a fix, trigger **one**
+workflow at a time and confirm it succeeds before the next.
+
+Post-fix verification (all match live Backoffice API):
+
+| Window | Supabase | API truth |
+|---|---|---|
+| June 2026 | 553 (424 platform / 129 manual) | 553 / 424 / 129 |
+
+### Stability Fix (earlier, July 2026)
 A critical issue caused repeated Supabase crashes:
 - **Root cause:** Duplicate workflows (2x Routes Sync, 2x Orders Hot) running simultaneously caused lock contention
 - **Secondary cause:** `reference-sync` and `routes-sync` had literal `SUPABASE_SERVICE_KEY` placeholder instead of the real key, generating 401 errors on every write

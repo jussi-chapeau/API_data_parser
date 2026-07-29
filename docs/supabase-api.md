@@ -50,7 +50,7 @@ One row per order. Covers both standard (`is_manual=false`) and manual orders (`
 | `first_schedule` | timestamptz | First scheduled delivery time |
 | `schedule` | jsonb | Full schedule object |
 | `content` | jsonb | Order items/contents |
-| `stops` | text | Number of stops |
+| `stops` | text | **Free-text address string, not a count.** Holds a single location (usually pickup) plus occasional operator notes. No structured delivery address exists in the API — ~59% of rows contain no postcode. Do not use for geographic joins; reconcile by `order_id`. |
 | `charge` | jsonb | Charge object from API — **shape differs for platform vs manual** (see below) |
 | `platform_fee` | integer | Platform fee in **cents, excl. VAT** — populated for platform orders only; `null` for manual |
 | `service_fee` | integer | Service fee in **cents, excl. VAT** — populated for platform orders only; `null` for manual |
@@ -273,5 +273,14 @@ for o in orders:
   - Days 4–14: refreshed every 6 hours
   - Days 15–45: refreshed daily at 03:30
   - Hubs: refreshed weekly Monday 02:00
-- **Row count:** ~9,500+ orders, 98 hubs as of July 2026.
+- **Row count:** ~11,000 orders, 99 hubs as of 29 July 2026.
+- **No end-customer name on platform orders.** `/order` rows have no customer field at
+  all (0 of 1,385 sampled) — `organization_name` is the hub/partner, not the customer.
+  Only manual orders carry customer name/email/phone. Customer-name lookups therefore
+  only ever hit manual orders.
+- **Every order has a schedule.** Of 1,900 orders sampled (Apr–Jul 2026) only 1 lacked
+  `first_schedule`, and `schedule` always holds exactly two entries (window start/end).
+  There is no unscheduled or pending state, so "sold but not yet scheduled" gigs do not
+  appear here at all — they live in the Offers layer until a date is set. Far-future
+  bookings are visible: 71 were scheduled 31+ days out, longest 87 days.
 - Full manual-order charge decision history: `data/AWS_API_charge_object_bug_report.md`.
