@@ -193,6 +193,29 @@ curl "$API/order?start_date=2026-07-07&end_date=2026-07-07"   # -> 200 OK
 Historical chunks fail unpredictably — a backfill run hit `500` on a 2024-05-30
 to 2024-06-28 window while adjacent chunks succeeded.
 
+**Confirmed impact, 2026-07-30:** this is not just slow — it caused real,
+months-long data loss. `backfill.json`'s 30-day chunking had zero retry
+configured, and `Log Sync` hardcoded `status: 'success'` regardless of what
+actually happened, so failed chunks silently never landed in Supabase. Re-ran
+30-day `/order` requests for 5 historical months 3x each: **7 of 15 attempts
+(~47%) failed with 500/504**, clustering at 25–29s (a gateway/Lambda timeout
+ceiling, not randomness):
+
+| Month | attempt 1 | attempt 2 | attempt 3 |
+|---|---|---|---|
+| 2025-11 | 200 | 200 | 200 |
+| 2025-12 | 200 | 504 (29s) | 200 |
+| 2026-01 | 200 | 504 | 504 |
+| 2026-02 | 200 | 504 | 200 |
+| 2026-04 | 500 | 504 | 200 |
+
+245 orders across those 5 months were missing from Supabase until manually
+re-backfilled day-by-day. Fixed on our side: `retryOnFail` on all Fetch nodes,
+an `errorWorkflow` that alerts + logs `status: 'failed'` honestly, and
+`scripts/backfill_missing_months.py` / `verify_sync_counts.py` for day-chunked
+recovery and ongoing verification. None of that fixes the underlying Lambda
+timeout, though — it just stops us from silently losing data to it.
+
 **Impact** — we must fetch **day by day** (≈60 requests per month, both
 endpoints) to sync reliably. Slow and needlessly heavy on the Lambda.
 
@@ -300,6 +323,31 @@ accuracy of any intra-month reporting.
 
 ---
 
+### 14. `/manual-order` can return records with no `orderId` at all
+
+```bash
+curl "$API/manual-order?start_date=2024-01-03&end_date=2024-01-03" -H "x-api-key: $KEY"
+# one record has no "orderId" field, empty charge.charge, empty orderType:
+# { "customer": {"name": "...", ...}, "charge": {"paymentMethod": "Card/cash", "charge": ""},
+#   "orgId": null, "orderType": "", ... no "orderId" key at all }
+```
+
+Found while reconciling 2024-01 as part of the sync-gap investigation (see #7)
+— 1 record out of ~6,800 checked (2024-01 through 2026-07). `order_id` is our
+warehouse's primary key, so this record structurally cannot be stored by any
+sync implementation, old or fixed. Not the same bug as #7 — this row is
+malformed at the source, not lost in transit.
+
+**Impact** — one permanently un-syncable historical order (2024-01-03,
+customer Hanna Leimu per the API's own data). Low volume, but worth knowing
+`orderId` isn't guaranteed present on `/manual-order` before writing code that
+assumes it.
+
+**Requested** — backfill the missing ID if the underlying order is real, or
+confirm these should be filtered/excluded upstream.
+
+---
+
 ## Summary
 
 | # | Issue | Priority | Requested change |
@@ -317,6 +365,7 @@ accuracy of any intra-month reporting.
 | 11 | Manual orders never `DELIVERED` | P3 | Unify lifecycle or document |
 | 12 | No unscheduled state; no pagination | P3 | Clarify; add `limit`/`offset` |
 | 13 | Possible same-day indexing lag | P3 | Confirm and document |
+| 14 | `/manual-order` record with no `orderId` | P3 | Backfill ID or filter upstream |
 
 **If only three are actioned:** #3 (`userId`) unlocks all customer analytics,
 #2 stops revenue being misreported, #1 recovers the entire routes dataset.

@@ -1,0 +1,187 @@
+{
+  "days_processed": 30,
+  "failed_days": [],
+  "total_upserted": 397,
+  "results": [
+    {
+      "day": "2026-04-01",
+      "status": "success",
+      "fetched": 18,
+      "upserted": 18
+    },
+    {
+      "day": "2026-04-02",
+      "status": "success",
+      "fetched": 14,
+      "upserted": 14
+    },
+    {
+      "day": "2026-04-03",
+      "status": "success",
+      "fetched": 2,
+      "upserted": 2
+    },
+    {
+      "day": "2026-04-04",
+      "status": "success",
+      "fetched": 1,
+      "upserted": 1
+    },
+    {
+      "day": "2026-04-05",
+      "status": "success",
+      "fetched": 4,
+      "upserted": 4
+    },
+    {
+      "day": "2026-04-06",
+      "status": "success",
+      "fetched": 9,
+      "upserted": 9
+    },
+    {
+      "day": "2026-04-07",
+      "status": "success",
+      "fetched": 16,
+      "upserted": 16
+    },
+    {
+      "day": "2026-04-08",
+      "status": "success",
+      "fetched": 21,
+      "upserted": 21
+    },
+    {
+      "day": "2026-04-09",
+      "status": "success",
+      "fetched": 13,
+      "upserted": 13
+    },
+    {
+      "day": "2026-04-10",
+      "status": "success",
+      "fetched": 13,
+      "upserted": 13
+    },
+    {
+      "day": "2026-04-11",
+      "status": "success",
+      "fetched": 3,
+      "upserted": 3
+    },
+    {
+      "day": "2026-04-12",
+      "status": "success",
+      "fetched": 11,
+      "upserted": 11
+    },
+    {
+      "day": "2026-04-13",
+      "status": "success",
+      "fetched": 25,
+      "upserted": 25
+    },
+    {
+      "day": "2026-04-14",
+      "status": "success",
+      "fetched": 26,
+      "upserted": 26
+    },
+    {
+      "day": "2026-04-15",
+      "status": "success",
+      "fetched": 13,
+      "upserted": 13
+    },
+    {
+      "day": "2026-04-16",
+      "status": "success",
+      "fetched": 13,
+      "upserted": 13
+    },
+    {
+      "day": "2026-04-17",
+      "status": "success",
+      "fetched": 20,
+      "upserted": 20
+    },
+    {
+      "day": "2026-04-18",
+      "status": "success",
+      "fetched": 8,
+      "upserted": 8
+    },
+    {
+      "day": "2026-04-19",
+      "status": "success",
+      "fetched": 6,
+      "upserted": 6
+    },
+    {
+      "day": "2026-04-20",
+      "status": "success",
+      "fetched": 16,
+      "upserted": 16
+    },
+    {
+      "day": "2026-04-21",
+      "status": "success",
+      "fetched": 20,
+      "upserted": 20
+    },
+    {
+      "day": "2026-04-22",
+      "status": "success",
+      "fetched": 15,
+      "upserted": 15
+    },
+    {
+      "day": "2026-04-23",
+      "status": "success",
+      "fetched": 12,
+      "upserted": 12
+    },
+    {
+      "day": "2026-04-24",
+      "status": "success",
+      "fetched": 16,
+      "upserted": 16
+    },
+    {
+      "day": "2026-04-25",
+      "status": "success",
+      "fetched": 10,
+      "upserted": 10
+    },
+    {
+      "day": "2026-04-26",
+      "status": "success",
+      "fetched": 4,
+      "upserted": 4
+    },
+    {
+      "day": "2026-04-27",
+      "status": "success",
+      "fetched": 13,
+      "upserted": 13
+    },
+    {
+      "day": "2026-04-28",
+      "status": "success",
+      "fetched": 18,
+      "upserted": 18
+    },
+    {
+      "day": "2026-04-29",
+      "status": "success",
+      "fetched": 25,
+      "upserted": 25
+    },
+    {
+      "day": "2026-04-30",
+      "status": "success",
+      "fetched": 12,
+      "upserted": 12
+    }
+  ]
+}

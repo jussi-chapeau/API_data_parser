@@ -1,7 +1,8 @@
 {
   "name": "Orders Warm Sync (days 4-14)",
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "errorWorkflow": "6hIScmlYADgaf16s"
   },
   "nodes": [
     {
@@ -78,7 +79,10 @@
             }
           }
         }
-      }
+      },
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 3000
     },
     {
       "id": "aaaaaaaa-0002-0002-0002-000000000004",
@@ -121,7 +125,10 @@
             }
           }
         }
-      }
+      },
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 3000
     },
     {
       "id": "aaaaaaaa-0002-0002-0002-000000000005",
@@ -147,7 +154,7 @@
         300
       ],
       "parameters": {
-        "jsCode": "function tsToIso(val) {\n  if (val === null || val === undefined || val === '') return null;\n  // If already ISO format (contains T or starts with year), return as-is\n  if (typeof val === 'string' && (val.includes('T') || /^\\d{4}-/.test(val))) return val;\n  const n = parseFloat(val);\n  if (isNaN(n)) return null;\n  return new Date(n * 1000).toISOString();\n}\n\nfunction feeToCents(val) {\n  if (val === null || val === undefined || val === '') return null;\n  const n = parseFloat(val);\n  if (isNaN(n)) return null;\n  return Math.round(n);\n}\n\nfunction parseManualTotalInclVat(charge) {\n  // Manual orders only expose charge.charge as a VAT-inclusive euro string.\n  // Accept plain amounts only (e.g. \"323.40\"). Reject rates/text like \"119e/h\".\n  if (!charge || charge.charge === null || charge.charge === undefined || charge.charge === '') {\n    return { totalInclVatEur: null, totalInclVatCents: null };\n  }\n  const raw = String(charge.charge).trim().replace(/\\s/g, '').replace(',', '.');\n  if (!/^[-+]?\\d+(\\.\\d+)?$/.test(raw)) {\n    return { totalInclVatEur: null, totalInclVatCents: null };\n  }\n  const n = parseFloat(raw);\n  if (isNaN(n)) return { totalInclVatEur: null, totalInclVatCents: null };\n  return {\n    totalInclVatEur: n,\n    totalInclVatCents: Math.round(n * 100),\n  };\n}\n\nconst results = [];\n\nfor (const item of $input.all()) {\n  const d = item.json;\n\n  // Determine if manual order based on presence of manual-order specific fields\n  const isManual = d.isManual === true || d.isManual === 'true' || (d.customer !== undefined && d.additionalInfo !== undefined) || (d.orgId !== undefined && d.orgId !== null && d.charge && d.charge.charge !== undefined && d.charge.workPrice === undefined);\n\n  let manualData = null;\n  let platformFee = null;\n  let serviceFee = null;\n\n  if (isManual) {\n    const { totalInclVatEur, totalInclVatCents } = parseManualTotalInclVat(d.charge);\n    manualData = {\n      customer: d.customer || null,\n      additionalInfo: d.additionalInfo || null,\n      serviceFeeApplied: d.serviceFeeApplied !== undefined ? d.serviceFeeApplied : null,\n      payment_method: (d.charge && d.charge.paymentMethod) ? d.charge.paymentMethod : null,\n      total_incl_vat_eur: totalInclVatEur,\n      total_incl_vat_cents: totalInclVatCents,\n      price_basis: 'gross_incl_vat',\n      source_field: 'charge.charge',\n      raw_charge_total: (d.charge && d.charge.charge !== undefined) ? String(d.charge.charge) : null,\n    };\n    // Manual orders have no API fee breakdown \u2014 leave fee columns null\n    platformFee = null;\n    serviceFee = null;\n  } else {\n    platformFee = feeToCents(d.platformFee);\n    serviceFee = feeToCents(d.serviceFee);\n  }\n\n  const transformed = {\n    order_id: d.orderId,\n    is_manual: isManual,\n    created_at: tsToIso(d.created || d.createdAt),\n    organization_name: d.organizationName || null,\n    org_id: d.orgId || null,\n    hub_id: d.hubId || null,\n    order_state: d.orderState || null,\n    order_type: d.orderType || null,\n    origin: isManual ? null : d.origin || null,\n    first_schedule: tsToIso(d.firstSchedule),\n    schedule: d.schedule || null,\n    content: d.content || null,\n    stops: d.stops || null,\n    charge: d.charge || null,\n    platform_fee: platformFee,\n    service_fee: serviceFee,\n    route_id: d.routeId || null,\n    commission_rate: d.commissionRate !== undefined && d.commissionRate !== null ? parseFloat(d.commissionRate) : null,\n    underway_at: tsToIso(d.underwayAt),\n    in_transit_at: tsToIso(d.inTransitAt),\n    delivered_at: tsToIso(d.deliveredAt),\n    review: d.review || null,\n    manual_data: manualData,\n    synced_at: new Date().toISOString()\n  };\n\n  if (transformed.order_id) {\n    results.push({ json: transformed });\n  }\n}\n\nreturn results;"
+        "jsCode": "function tsToIso(val) {\n  if (val === null || val === undefined || val === '') return null;\n  // If already ISO format (contains T or starts with year), return as-is\n  if (typeof val === 'string' && (val.includes('T') || /^\\d{4}-/.test(val))) return val;\n  const n = parseFloat(val);\n  if (isNaN(n)) return null;\n  return new Date(n * 1000).toISOString();\n}\n\nfunction feeToCents(val) {\n  if (val === null || val === undefined || val === '') return null;\n  const n = parseFloat(val);\n  if (isNaN(n)) return null;\n  return Math.round(n);\n}\n\nfunction parseManualTotalInclVat(charge) {\n  // Manual orders only expose charge.charge as a VAT-inclusive euro string.\n  // Accept plain amounts only (e.g. \"323.40\"). Reject rates/text like \"119e/h\".\n  if (!charge || charge.charge === null || charge.charge === undefined || charge.charge === '') {\n    return { totalInclVatEur: null, totalInclVatCents: null };\n  }\n  const raw = String(charge.charge).trim().replace(/\\s/g, '').replace(',', '.');\n  if (!/^[-+]?\\d+(\\.\\d+)?$/.test(raw)) {\n    return { totalInclVatEur: null, totalInclVatCents: null };\n  }\n  const n = parseFloat(raw);\n  if (isNaN(n)) return { totalInclVatEur: null, totalInclVatCents: null };\n  return {\n    totalInclVatEur: n,\n    totalInclVatCents: Math.round(n * 100),\n  };\n}\n\nconst results = [];\n\nfor (const item of $input.all()) {\n  const d = item.json;\n\n  // Determine if manual order based on presence of manual-order specific fields\n  const isManual = d.isManual === true || d.isManual === 'true' || (d.customer !== undefined && d.additionalInfo !== undefined) || (d.orgId !== undefined && d.orgId !== null && d.charge && d.charge.charge !== undefined && d.charge.workPrice === undefined);\n\n  let manualData = null;\n  let platformFee = null;\n  let serviceFee = null;\n\n  if (isManual) {\n    const { totalInclVatEur, totalInclVatCents } = parseManualTotalInclVat(d.charge);\n    manualData = {\n      customer: d.customer || null,\n      additionalInfo: d.additionalInfo || null,\n      serviceFeeApplied: d.serviceFeeApplied !== undefined ? d.serviceFeeApplied : null,\n      payment_method: (d.charge && d.charge.paymentMethod) ? d.charge.paymentMethod : null,\n      total_incl_vat_eur: totalInclVatEur,\n      total_incl_vat_cents: totalInclVatCents,\n      price_basis: 'gross_incl_vat',\n      source_field: 'charge.charge',\n      raw_charge_total: (d.charge && d.charge.charge !== undefined) ? String(d.charge.charge) : null,\n    };\n    // Manual orders have no API fee breakdown — leave fee columns null\n    platformFee = null;\n    serviceFee = null;\n  } else {\n    platformFee = feeToCents(d.platformFee);\n    serviceFee = feeToCents(d.serviceFee);\n  }\n\n  const transformed = {\n    order_id: d.orderId,\n    is_manual: isManual,\n    created_at: tsToIso(d.created || d.createdAt),\n    organization_name: d.organizationName || null,\n    org_id: d.orgId || null,\n    hub_id: d.hubId || null,\n    order_state: d.orderState || null,\n    order_type: d.orderType || null,\n    origin: isManual ? null : d.origin || null,\n    first_schedule: tsToIso(d.firstSchedule),\n    schedule: d.schedule || null,\n    content: d.content || null,\n    stops: d.stops || null,\n    charge: d.charge || null,\n    platform_fee: platformFee,\n    service_fee: serviceFee,\n    route_id: d.routeId || null,\n    commission_rate: d.commissionRate !== undefined && d.commissionRate !== null ? parseFloat(d.commissionRate) : null,\n    underway_at: tsToIso(d.underwayAt),\n    in_transit_at: tsToIso(d.inTransitAt),\n    delivered_at: tsToIso(d.deliveredAt),\n    review: d.review || null,\n    manual_data: manualData,\n    synced_at: new Date().toISOString()\n  };\n\n  if (transformed.order_id) {\n    results.push({ json: transformed });\n  }\n}\n\nreturn results;"
       }
     },
     {

@@ -1,0 +1,12 @@
+{
+  "months_checked": 1,
+  "months_with_gaps": [],
+  "rows": [
+    {
+      "month": "2026-04",
+      "live": 397,
+      "supabase": 397,
+      "missing": 0
+    }
+  ]
+}
