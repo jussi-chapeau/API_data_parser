@@ -2,6 +2,35 @@
 
 One entry per deploy to production — date, what shipped, why it matters. Detail in `git log`.
 
+## 2026-08-06
+
+- **Marketing data ingestion** — Google Ads, Meta Ads, and GA now live in Supabase:
+  `ads_google_campaign_daily`, `ads_meta_placement_daily`, `analytics_ga_daily_totals/source/geo`.
+  Ads/Meta via the Supermetrics API direct (not Sheets — avoided a pivot/staleness problem in
+  the existing Sheets-based dashboard queries); GA via its existing native Sheets export. 3 new
+  N8N workflows (`Ads Google Daily Sync`, `Ads Meta Daily Sync`, `Analytics GA Daily Sync`), all
+  active. Historical backfill: Ads full 2yr, Meta ~13mo (a real Meta Ads Insights API retention
+  limit, not fixable), GA full history via the Sheets read itself. Full build/debug trail in
+  `docs/STATUS.md` workstream B.
+- **Fixed a ~2-day silent production outage, and the monitoring chain that should have caught
+  it** — Supabase API key rotated at some point without updating the 8 workflows using it
+  (Orders Hot/Warm/Cool, Routes Sync, Reference Data Sync, Backfill, and the monitoring
+  workflows themselves), so no order/route/hub data synced from 2026-08-04 16:00 UTC onward.
+  Found while answering a routine gig-count question. Fixing the key alone wasn't enough —
+  two more independent bugs were also silently blocking alerts: `Sync Error Handler`'s
+  `callerPolicy` rejected calls from workflows in a different N8N project
+  (`workflowsFromSameOwner` → `any`), and `Supabase Health Check`'s `Healthy?` node crashed on
+  strict type validation before ever reaching the Slack alert (`strict` → `loose`). All three
+  fixed and independently verified (live re-trigger for the key fix, a real scheduled run for
+  the type-validation fix). See `docs/GOTCHAS.md`.
+- **`orders.is_asuntosaatio_gig` flag + value correction** — Asuntosäätiö B2B moves (tenant
+  signing-bonus deals) are recorded as €0 by the source system; Asuntosäätiö pays outside the
+  order record. New column flags these (mention anywhere in the order + recorded value = €0,
+  manual orders only) and overrides the value to the real flat rate (€400 excl. VAT / €502 incl.
+  VAT), preserving the original €0 for audit. Applied in N8N Transform Orders across all 4
+  order-sync workflows going forward; backfilled 24 existing rows
+  (`supabase/migrations/006_add_asuntosaatio_gig_flag.sql`). See `docs/GOTCHAS.md`.
+
 ## 2026-07-30
 
 - **Fixed silent order-sync data loss** — Backoffice `/order` intermittently

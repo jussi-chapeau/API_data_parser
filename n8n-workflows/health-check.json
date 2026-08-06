@@ -1,94 +1,206 @@
 {
   "name": "Supabase Health Check",
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
   "nodes": [
     {
+      "id": "hc-schedule-01",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ],
       "parameters": {
         "rule": {
-          "interval": [{ "field": "cronExpression", "expression": "*/30 * * * *" }]
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
         }
-      },
-      "id": "aaaaaaaa-0007-0007-0007-000000000001",
-      "name": "Every 30 Minutes",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.1,
-      "position": [250, 300]
+      }
     },
     {
-      "parameters": {
-        "method": "GET",
-        "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/sync_log?limit=1",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "apikey", "value": "SUPABASE_SERVICE_KEY" },
-            { "name": "Authorization", "value": "Bearer SUPABASE_SERVICE_KEY" }
-          ]
-        },
-        "options": {
-          "timeout": 10000,
-          "response": { "response": { "neverError": true, "responseFormat": "text" } }
-        }
-      },
-      "id": "aaaaaaaa-0007-0007-0007-000000000002",
+      "id": "hc-ping-01",
       "name": "Ping Supabase",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [500, 300]
-    },
-    {
+      "position": [
+        240,
+        300
+      ],
+      "continueOnFail": true,
       "parameters": {
-        "jsCode": "const res = $input.first().json;\nconst statusCode = res.$response?.statusCode || 0;\nconst isHealthy = statusCode >= 200 && statusCode < 300;\nreturn [{ json: { isHealthy, statusCode, checkedAt: new Date().toISOString() } }];"
-      },
-      "id": "aaaaaaaa-0007-0007-0007-000000000003",
-      "name": "Check Status",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [750, 300]
+        "method": "GET",
+        "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/sync_log?select=id&limit=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer SUPABASE_SERVICE_KEY"
+            }
+          ]
+        },
+        "options": {}
+      }
     },
     {
+      "id": "hc-if-01",
+      "name": "Healthy?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
       "parameters": {
         "conditions": {
-          "boolean": [{ "value1": "={{ $json.isHealthy }}", "value2": false }]
-        }
-      },
-      "id": "aaaaaaaa-0007-0007-0007-000000000004",
-      "name": "Is Down?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
-      "position": [1000, 300]
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-01",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      }
     },
     {
-      "parameters": {
-        "method": "POST",
-        "url": "https://apukuski.app.n8n.cloud/webhook/alert-placeholder",
-        "sendBody": true,
-        "contentType": "json",
-        "body": "={\n  \"text\": \"🚨 *Supabase is DOWN*\\nStatus: {{ $json.statusCode }}\\nTime: {{ $json.checkedAt }}\\nProject: ybznbfezrdgzgptxkgul\\n\\nCheck: https://supabase.com/dashboard/project/ybznbfezrdgzgptxkgul\"\n}",
-        "options": {}
-      },
-      "id": "aaaaaaaa-0007-0007-0007-000000000005",
+      "id": "hc-slack-01",
       "name": "Send Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        200
+      ],
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "tech-alerts-sos",
+          "mode": "name"
+        },
+        "text": "=\ud83d\udea8 *Supabase Health Check FAILED*\n\n\ud83d\udccc *Error:* {{ $json.error?.message || 'Unreachable' }}\n\ud83d\udd50 *Time:* {{ new Date().toISOString() }}\n\nSupabase REST API at `ybznbfezrdgzgptxkgul` is not responding.",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "GutThvCLCxxw08G3",
+          "name": "Slack account 2"
+        }
+      }
+    },
+    {
+      "id": "hc-log-01",
+      "name": "Log Failure",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1250, 200]
+      "position": [
+        960,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/sync_log",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "[{ \"workflow\": \"supabase-health-check\", \"started_at\": \"={{ $execution.startedAt }}\", \"completed_at\": \"={{ new Date().toISOString() }}\", \"date_range\": null, \"rows_upserted\": 0, \"status\": \"error\", \"error_message\": \"={{ $json.error?.message || 'Supabase unreachable' }}\" }]",
+        "options": {}
+      }
     }
   ],
   "connections": {
-    "Every 30 Minutes": {
-      "main": [[{ "node": "Ping Supabase", "type": "main", "index": 0 }]]
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Ping Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Ping Supabase": {
-      "main": [[{ "node": "Check Status", "type": "main", "index": 0 }]]
-    },
-    "Check Status": {
-      "main": [[{ "node": "Is Down?", "type": "main", "index": 0 }]]
-    },
-    "Is Down?": {
       "main": [
-        [{ "node": "Send Alert", "type": "main", "index": 0 }],
+        [
+          {
+            "node": "Healthy?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Healthy?": {
+      "main": [
+        [
+          {
+            "node": "Send Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
         []
       ]
+    },
+    "Send Alert": {
+      "main": [
+        [
+          {
+            "node": "Log Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
-  },
-  "settings": { "executionOrder": "v1" }
+  }
 }

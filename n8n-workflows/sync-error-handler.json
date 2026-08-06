@@ -1,0 +1,112 @@
+{
+  "name": "Sync Error Handler",
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "any",
+    "availableInMCP": false
+  },
+  "nodes": [
+    {
+      "id": "err-trigger-01",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "slack-alert-01",
+      "name": "Send Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        260,
+        300
+      ],
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "tech-alerts-sos",
+          "mode": "name"
+        },
+        "text": "=\u26a0\ufe0f *Sync workflow failed* \u2014 {{ $json.execution.workflowData.name }}\n\n\ud83d\udccc *Error:* {{ $json.execution.error.message }}\n\ud83d\udd34 *Failed node:* {{ $json.execution.error.node.name }}\n\ud83d\udd17 *Execution:* {{ $json.execution.url }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "GutThvCLCxxw08G3",
+          "name": "Slack account 2"
+        }
+      }
+    },
+    {
+      "id": "log-error-01",
+      "name": "Log Error",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/sync_log",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "[{ \"workflow\": \"={{ $json.execution.workflowData.name }}\", \"started_at\": null, \"completed_at\": \"={{ new Date().toISOString() }}\", \"date_range\": null, \"rows_upserted\": 0, \"status\": \"error\", \"error_message\": \"={{ $json.execution.error.message }} (node: {{ $json.execution.error.node.name }})\" }]",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Alert": {
+      "main": [
+        [
+          {
+            "node": "Log Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

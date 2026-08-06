@@ -2,6 +2,8 @@
   "name": "Orders Cool Sync (days 15-45)",
   "settings": {
     "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
     "errorWorkflow": "6hIScmlYADgaf16s"
   },
   "nodes": [
@@ -154,7 +156,7 @@
         300
       ],
       "parameters": {
-        "jsCode": "function tsToIso(val) {\n  if (val === null || val === undefined || val === '') return null;\n  // If already ISO format (contains T or starts with year), return as-is\n  if (typeof val === 'string' && (val.includes('T') || /^\\d{4}-/.test(val))) return val;\n  const n = parseFloat(val);\n  if (isNaN(n)) return null;\n  return new Date(n * 1000).toISOString();\n}\n\nfunction feeToCents(val) {\n  if (val === null || val === undefined || val === '') return null;\n  const n = parseFloat(val);\n  if (isNaN(n)) return null;\n  return Math.round(n);\n}\n\nfunction parseManualTotalInclVat(charge) {\n  // Manual orders only expose charge.charge as a VAT-inclusive euro string.\n  // Accept plain amounts only (e.g. \"323.40\"). Reject rates/text like \"119e/h\".\n  if (!charge || charge.charge === null || charge.charge === undefined || charge.charge === '') {\n    return { totalInclVatEur: null, totalInclVatCents: null };\n  }\n  const raw = String(charge.charge).trim().replace(/\\s/g, '').replace(',', '.');\n  if (!/^[-+]?\\d+(\\.\\d+)?$/.test(raw)) {\n    return { totalInclVatEur: null, totalInclVatCents: null };\n  }\n  const n = parseFloat(raw);\n  if (isNaN(n)) return { totalInclVatEur: null, totalInclVatCents: null };\n  return {\n    totalInclVatEur: n,\n    totalInclVatCents: Math.round(n * 100),\n  };\n}\n\nconst results = [];\n\nfor (const item of $input.all()) {\n  const d = item.json;\n\n  // Determine if manual order based on presence of manual-order specific fields\n  const isManual = d.isManual === true || d.isManual === 'true' || (d.customer !== undefined && d.additionalInfo !== undefined) || (d.orgId !== undefined && d.orgId !== null && d.charge && d.charge.charge !== undefined && d.charge.workPrice === undefined);\n\n  let manualData = null;\n  let platformFee = null;\n  let serviceFee = null;\n\n  if (isManual) {\n    const { totalInclVatEur, totalInclVatCents } = parseManualTotalInclVat(d.charge);\n    manualData = {\n      customer: d.customer || null,\n      additionalInfo: d.additionalInfo || null,\n      serviceFeeApplied: d.serviceFeeApplied !== undefined ? d.serviceFeeApplied : null,\n      payment_method: (d.charge && d.charge.paymentMethod) ? d.charge.paymentMethod : null,\n      total_incl_vat_eur: totalInclVatEur,\n      total_incl_vat_cents: totalInclVatCents,\n      price_basis: 'gross_incl_vat',\n      source_field: 'charge.charge',\n      raw_charge_total: (d.charge && d.charge.charge !== undefined) ? String(d.charge.charge) : null,\n    };\n    // Manual orders have no API fee breakdown — leave fee columns null\n    platformFee = null;\n    serviceFee = null;\n  } else {\n    platformFee = feeToCents(d.platformFee);\n    serviceFee = feeToCents(d.serviceFee);\n  }\n\n  const transformed = {\n    order_id: d.orderId,\n    is_manual: isManual,\n    created_at: tsToIso(d.created || d.createdAt),\n    organization_name: d.organizationName || null,\n    org_id: d.orgId || null,\n    hub_id: d.hubId || null,\n    order_state: d.orderState || null,\n    order_type: d.orderType || null,\n    origin: isManual ? null : d.origin || null,\n    first_schedule: tsToIso(d.firstSchedule),\n    schedule: d.schedule || null,\n    content: d.content || null,\n    stops: d.stops || null,\n    charge: d.charge || null,\n    platform_fee: platformFee,\n    service_fee: serviceFee,\n    route_id: d.routeId || null,\n    commission_rate: d.commissionRate !== undefined && d.commissionRate !== null ? parseFloat(d.commissionRate) : null,\n    underway_at: tsToIso(d.underwayAt),\n    in_transit_at: tsToIso(d.inTransitAt),\n    delivered_at: tsToIso(d.deliveredAt),\n    review: d.review || null,\n    manual_data: manualData,\n    synced_at: new Date().toISOString()\n  };\n\n  if (transformed.order_id) {\n    results.push({ json: transformed });\n  }\n}\n\nreturn results;"
+        "jsCode": "function tsToIso(val) {\n  if (val === null || val === undefined || val === '') return null;\n  if (typeof val === 'string' && (val.includes('T') || /^\\d{4}-/.test(val))) return val;\n  const n = parseFloat(val);\n  if (isNaN(n)) return null;\n  return new Date(n * 1000).toISOString();\n}\n\nfunction parseManualTotal(charge) {\n  if (!charge || charge.charge === null || charge.charge === undefined || charge.charge === '') {\n    return { totalInclVatEur: null, totalInclVatCents: null, rawChargeTotal: null };\n  }\n  const rawChargeTotal = String(charge.charge).trim();\n  const cleaned = rawChargeTotal\n    .replace(/\u00a0/g, '')\n    .replace(/\u20ac/g, '')\n    .replace(/EUR/gi, '')\n    .replace(/\\s/g, '')\n    .replace(',', '.');\n  if (!/^[-+]?\\d+(\\.\\d+)?$/.test(cleaned)) {\n    return { totalInclVatEur: null, totalInclVatCents: null, rawChargeTotal };\n  }\n  const totalInclVatEur = parseFloat(cleaned);\n  return {\n    totalInclVatEur,\n    totalInclVatCents: Math.round(totalInclVatEur * 100),\n    rawChargeTotal,\n  };\n}\n\n// Asuntos\u00e4\u00e4ti\u00f6 B2B deals: 400\u20ac (ALV 0) / 502\u20ac (incl. VAT), always recorded as 0\u20ac by the\n// source system since they're free-of-charge to the tenant -- Asuntos\u00e4\u00e4ti\u00f6 pays Apukuski\n// outside the order record. Business rule from Jussi 2026-08-06: flag + override so monthly\n// revenue sums aren't silently missing these B2B deals. Manual orders only -- platform orders\n// don't have an equivalent single \"gig value\" field to check against zero.\nfunction isAsuntosaatioMention(d) {\n  try {\n    return JSON.stringify(d).toLowerCase().includes('asuntos\u00e4\u00e4ti\u00f6');\n  } catch (e) {\n    return false;\n  }\n}\nconst ASUNTOSAATIO_EXCL_VAT_EUR = 400;\nconst ASUNTOSAATIO_INCL_VAT_EUR = 502;\n\nconst results = [];\n\nfor (const item of $input.all()) {\n  const d = item.json;\n\n  const isManual =\n    d.isManual === true ||\n    d.isManual === 'true' ||\n    (d.customer !== undefined && d.additionalInfo !== undefined);\n\n  const manualPricing = isManual ? parseManualTotal(d.charge || null) : null;\n\n  let isAsuntosaatioGig = 'No';\n  let manualDataObj = null;\n\n  if (isManual) {\n    const isAsuntosaatioOverride =\n      isAsuntosaatioMention(d) && manualPricing.totalInclVatEur === 0;\n    isAsuntosaatioGig = isAsuntosaatioOverride ? 'Yes' : 'No';\n\n    manualDataObj = {\n      customer: d.customer || null,\n      additionalInfo: d.additionalInfo || null,\n      serviceFeeApplied: d.serviceFeeApplied || null,\n      total_incl_vat_eur: isAsuntosaatioOverride ? ASUNTOSAATIO_INCL_VAT_EUR : manualPricing.totalInclVatEur,\n      total_incl_vat_cents: isAsuntosaatioOverride ? ASUNTOSAATIO_INCL_VAT_EUR * 100 : manualPricing.totalInclVatCents,\n      total_excl_vat_eur: isAsuntosaatioOverride ? ASUNTOSAATIO_EXCL_VAT_EUR : null,\n      total_excl_vat_cents: isAsuntosaatioOverride ? ASUNTOSAATIO_EXCL_VAT_EUR * 100 : null,\n      price_basis: 'gross_incl_vat',\n      raw_charge_total: manualPricing.rawChargeTotal,\n      original_total_incl_vat_eur: isAsuntosaatioOverride ? manualPricing.totalInclVatEur : undefined,\n      value_override_reason: isAsuntosaatioOverride ? 'asuntosaatio_b2b_flat_rate' : undefined,\n    };\n  }\n\n  const transformed = {\n    order_id: d.orderId,\n    is_manual: isManual,\n    created_at: tsToIso(d.created || d.createdAt),\n    organization_name: d.organizationName || null,\n    org_id: d.orgId || null,\n    hub_id: d.hubId || null,\n    order_state: d.orderState || null,\n    order_type: d.orderType || null,\n    origin: isManual ? null : d.origin || null,\n    first_schedule: tsToIso(d.firstSchedule),\n    schedule: d.schedule || null,\n    content: d.content || null,\n    stops: d.stops || null,\n    charge: d.charge || null,\n    platform_fee: isManual\n      ? null\n      : d.platformFee !== undefined && d.platformFee !== null\n        ? Math.round(parseFloat(d.platformFee))\n        : null,\n    service_fee: isManual\n      ? null\n      : d.serviceFee !== undefined && d.serviceFee !== null\n        ? Math.round(parseFloat(d.serviceFee))\n        : null,\n    route_id: d.routeId || null,\n    commission_rate: d.commissionRate !== undefined ? parseFloat(d.commissionRate) : null,\n    underway_at: tsToIso(d.underwayAt),\n    in_transit_at: tsToIso(d.inTransitAt),\n    delivered_at: tsToIso(d.deliveredAt),\n    review: d.review || null,\n    manual_data: manualDataObj,\n    is_asuntosaatio_gig: isAsuntosaatioGig,\n    synced_at: new Date().toISOString(),\n  };\n\n  if (transformed.order_id) {\n    results.push({ json: transformed });\n  }\n}\n\nreturn results;\n"
       }
     },
     {
@@ -259,7 +261,7 @@
         "batchSize": 100,
         "options": {}
       },
-      "id": "536c9df6-49a8-494c-a15e-79ee2b91740e",
+      "id": "26093c4b-84da-4819-b2c0-9f0475f4b1d9",
       "name": "Loop Over Items",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
@@ -352,6 +354,17 @@
         ]
       ]
     },
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Date Range",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Loop Over Items": {
       "main": [
         [
@@ -364,17 +377,6 @@
         [
           {
             "node": "Upsert Orders",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Webhook Trigger": {
-      "main": [
-        [
-          {
-            "node": "Set Date Range",
             "type": "main",
             "index": 0
           }

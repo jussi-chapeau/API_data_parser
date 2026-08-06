@@ -8,6 +8,11 @@ Update this file, don't create a new one — one canonical status doc avoids dri
 
 **Last updated:** 2026-08-06
 
+**Two ad-hoc production items closed out today, outside the lettered workstreams below** —
+full detail in `CHANGELOG.md` (2026-08-06 entry) and `docs/GOTCHAS.md`, not duplicated here:
+a ~2-day silent Supabase-key outage across 8 workflows (found while answering a gig-count
+question, now fixed), and the new `orders.is_asuntosaatio_gig` flag + value-correction logic.
+
 ---
 
 ## Active workstreams
@@ -247,15 +252,14 @@ Supermetrics *Sheets* query — superseded by the API approach and no longer nee
 - ~~Meta: Jussi investigating stuck Sheets refresh~~ — **resolved, ad spend paused since May
   2026, not a bug; moot now that Meta also runs API-direct.**
 - [x] Google Sheets + Docs credential path decided — service account, see instructions below
-- [ ] Decide: full history backfill vs. recent cutoff (Meta/GA can go back to 2025-01-01 cleanly;
-      Google Ads full history is blocked on the schema decision above)
-- [ ] Supabase migration for marketing tables — table list may need to grow beyond the original
-      5 (`ads_google_campaign_daily`, `ads_meta_placement_daily`, `analytics_ga_daily_totals`,
-      `analytics_ga_daily_source`, `analytics_ga_daily_geo`) once Google Ads shape is settled —
-      the extra fields in the real sheets (budget, status, conversion value, lost-impression-share)
-      weren't in the original plan
-- [ ] Build N8N workflow(s): Sheets read → parse (locale numbers, per-tab header offsets) → upsert → sync_log
-- [ ] Backfill historical marketing data
+- [x] ~~Decide: full history backfill vs. recent cutoff~~ — done (Ads 2yr, Meta ~13mo capped
+      by platform limit, GA full history via Sheets)
+- [x] ~~Supabase migration for marketing tables~~ — done, all 5 tables live
+      (`ads_google_campaign_daily`, `ads_meta_placement_daily`, `analytics_ga_daily_totals`,
+      `analytics_ga_daily_source`, `analytics_ga_daily_geo`)
+- [x] ~~Build N8N workflow(s)~~ — done, all 3 workflows live and verified
+- [x] ~~Backfill historical marketing data~~ — done for Ads/Meta (Python scripts); GA didn't
+      need a separate backfill, the daily Sheets-read workflow already pulls full history
 
 #### Google Sheets + Docs credential setup (one service account, covers both)
 

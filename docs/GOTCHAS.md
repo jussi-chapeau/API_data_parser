@@ -48,3 +48,40 @@ backend aligns rates.
 
 **N8N date filter is on order creation, not execution.** Sync windows (`start_date` /
 `end_date`) filter when the order was created, not `Toteutuspäivä` / `first_schedule`.
+
+**Monitoring workflows share credentials with what they monitor — and had two more
+independent bugs on top of that.** A Supabase key rotation (2026-08) silently broke every
+workflow writing to Supabase, ~2 days of missing order/route/hub data, zero alerts. Three
+separate, independently-broken things had to each be fixed before alerting actually worked
+again (fixing only the key was not enough):
+1. The stale key itself, baked into 8 workflows including `Supabase Health Check`/
+   `Sync Error Handler`.
+2. `Sync Error Handler`'s `callerPolicy` was `workflowsFromSameOwner` — it lives in Jussi's
+   **personal** N8N project, while `Orders Hot/Warm/Cool Sync` etc. live in the shared
+   **"Apukuski" team project**. The `errorWorkflow` link was correctly configured on the
+   callers, but n8n silently refused the actual cross-project call every time. Likely broken
+   since whenever the team project was set up — probably well before this specific incident.
+   Fixed: `callerPolicy: 'any'`.
+3. `Supabase Health Check`'s `Healthy?` IF node had `typeValidation: 'strict'`, which crashed
+   on Supabase's ping response (likely an `error: null` field strict mode can't coerce)
+   *before* ever reaching the Slack-alert node — unrelated to the key, would have blocked
+   alerting even with a valid key. Fixed: `typeValidation: 'loose'` (n8n's own error message
+   suggested this exact fix).
+
+Crashes that happen before a workflow's Log Sync node produce no `sync_log` row at all —
+check `GET /executions` via the N8N API (or the UI) for silent failures, don't trust
+`sync_log`'s absence of `'failed'` rows to mean things are healthy. And don't assume a
+monitoring/alerting workflow works just because it's *there* — verify it actually fires,
+end to end, occasionally.
+
+**Asuntosäätiö B2B deals are recorded as €0.** Manual orders where Asuntosäätiö sponsors a
+tenant's move ("signing bonus", free of charge to the tenant) always show
+`manual_data.total_incl_vat_eur = 0` in the source data — Asuntosäätiö pays Apukuski outside
+the order record. `orders.is_asuntosaatio_gig` (`'Yes'`/`'No'`, added 2026-08-06) flags these
+(mention of "Asuntosäätiö" anywhere in the order + recorded value = €0, manual orders only)
+and overrides the value to the real flat rate: €400 excl. VAT / €502 incl. VAT
+(`manual_data.total_excl_vat_eur` / `total_incl_vat_eur`). Original €0 preserved in
+`manual_data.original_total_incl_vat_eur` for audit. Applied in N8N Transform Orders (all 4
+order-sync workflows) going forward, backfilled for 24 existing rows. Don't sum
+`total_incl_vat_eur` for revenue without knowing this override exists, or Asuntosäätiö
+volume will look like €0 in reports.
