@@ -5,7 +5,8 @@ Structured reference for this project. Each file owns **one topic**. These docs 
 
 | Doc | What's in it |
 |-----|--------------|
-| [project-architecture.md](project-architecture.md) | Pipeline, N8N workflows, Supabase schema, Lovable, security, status |
+| [STATUS.md](STATUS.md) | **Read this first.** Shared session handoff — active workstreams, what's blocked, what changed last |
+| [project-architecture.md](project-architecture.md) | Pipeline, N8N workflows, Supabase schema, Lovable, security |
 | [supabase-api.md](supabase-api.md) | PostgREST query reference for consumers |
 | [GOTCHAS.md](GOTCHAS.md) | Hard-won lessons — read before touching pricing, sync, or metrics |
 | [DECISIONS.md](DECISIONS.md) | Chronological design decisions and why |

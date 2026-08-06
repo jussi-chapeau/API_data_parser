@@ -295,16 +295,9 @@ A critical issue caused repeated Supabase crashes:
 
 ## Pending / Known Issues
 
-| Issue | Priority | Owner |
-|---|---|---|
-| `/route` Lambda returns error / timeout — routes table empty | High | Backend team |
-| Deploy Edge Functions to Supabase (`./scripts/deploy-edge-functions.sh`) | Done | — |
-| Re-activate all 6 canonical workflows after stability fix | High | Done via CLI Claude |
-| Backoffice API intermittent 500/timeout — blocks N8N backfill re-run | Medium | Backend team |
-| Lovable "Run Now" buttons — webhook trigger nodes + Edge Functions now in repo/deployed | Medium | Re-import updated workflow JSON to live N8N |
-| N8N transform: populate `manual_data.total_incl_vat_*` from `charge.charge` | Done in repo JSON | Re-import/update live N8N workflows |
-| `/manual-order` full charge breakdown | Low (accepted interim) | Backend / later |
-| Install Claude Code on MacBook-Pro-2 (`sudo npm install -g @anthropic-ai/claude-code`) | Low | Local setup |
+Current open work moved to [`docs/STATUS.md`](STATUS.md) — the shared session handoff doc
+between Claude Code, Cursor, and any other agent. Update that file, not this section, when
+work starts/finishes.
 
 ---
 
