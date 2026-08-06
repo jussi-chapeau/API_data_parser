@@ -1,0 +1,167 @@
+{
+  "name": "Ads Meta Daily Sync (last 30 days)",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "id": "aaaaaaaa-0010-0010-0010-000000000001",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 5 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "aaaaaaaa-0010-0010-0010-000000000002",
+      "name": "Fetch Meta Ads Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.supermetrics.com/enterprise/v2/query/data/keyjson",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ ds_id: 'FA', ds_accounts: 'list.all_accounts', ds_user: '10166639489569112', date_range_type: 'last_30_days', fields: 'Date,adcampaign_id,adcampaign_name,placement,cost_eur,impressions,unique_action_link_click,offsite_conversions,offsite_conversion_value,offsite_conversions_fb_pixel_purchase', max_rows: 10000 }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_SUPERMETRICS_CREDENTIAL_ID",
+          "name": "Supermetrics API"
+        }
+      }
+    },
+    {
+      "id": "aaaaaaaa-0010-0010-0010-000000000003",
+      "name": "Transform Meta Ads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300],
+      "parameters": {
+        "jsCode": "// NOTE: same assumption as ads-google-daily.json — /keyjson returns a bare array of\n// row objects, auto-split by n8n into one item per row. Verify item count against the\n// Hub preview's row count on first real run.\n\nconst results = [];\n\nfor (const item of $input.all()) {\n  const d = item.json;\n\n  const transformed = {\n    date: d.Date,\n    campaign_id: d.adcampaign_id,\n    campaign_name: d.adcampaign_name || null,\n    placement: d.placement,\n    impressions: d.impressions != null ? Number(d.impressions) : null,\n    cost_eur: d.cost_eur != null ? Number(d.cost_eur) : null,\n    link_clicks: d.unique_action_link_click != null ? Number(d.unique_action_link_click) : null,\n    website_conversions: d.offsite_conversions != null ? Number(d.offsite_conversions) : null,\n    website_conversion_value: d.offsite_conversion_value != null ? Number(d.offsite_conversion_value) : null,\n    website_purchases: d.offsite_conversions_fb_pixel_purchase != null ? Number(d.offsite_conversions_fb_pixel_purchase) : null,\n    synced_at: new Date().toISOString()\n  };\n\n  if (transformed.date && transformed.campaign_id && transformed.placement) {\n    results.push({ json: transformed });\n  }\n}\n\nreturn results;"
+      }
+    },
+    {
+      "id": "aaaaaaaa-0010-0010-0010-000000000004",
+      "name": "Upsert Meta Ads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/ads_meta_placement_daily",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $input.all().map(i => i.json) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "aaaaaaaa-0010-0010-0010-000000000005",
+      "name": "Log Sync",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/sync_log",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify([{ workflow: 'ads-meta-daily', started_at: $execution.startedAt, completed_at: new Date().toISOString(), date_range: 'last_30_days', rows_upserted: $('Transform Meta Ads').all().length, status: 'success', error_message: null }]) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "88b7948f-0803-4e06-86de-cf948eab3972",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 480],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ads-meta-daily",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "webhookId": "88b7948f-0803-4e06-86de-cf948eab3972"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{ "node": "Fetch Meta Ads Data", "type": "main", "index": 0 }]]
+    },
+    "Fetch Meta Ads Data": {
+      "main": [[{ "node": "Transform Meta Ads", "type": "main", "index": 0 }]]
+    },
+    "Transform Meta Ads": {
+      "main": [[{ "node": "Upsert Meta Ads", "type": "main", "index": 0 }]]
+    },
+    "Upsert Meta Ads": {
+      "main": [[{ "node": "Log Sync", "type": "main", "index": 0 }]]
+    },
+    "Webhook Trigger": {
+      "main": [[{ "node": "Fetch Meta Ads Data", "type": "main", "index": 0 }]]
+    }
+  }
+}

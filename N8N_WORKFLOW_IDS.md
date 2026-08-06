@@ -1,6 +1,6 @@
 # N8N Workflow IDs
 
-Last verified: 2026-06-26
+Last verified: 2026-08-06
 
 ## Sync Workflows
 
@@ -12,6 +12,8 @@ Last verified: 2026-06-26
 | Routes Sync (last 45 days) | cgEcgz89U6Rp7UJH | Daily 04:00 | Active |
 | Reference Data Sync (hubs weekly) | D62F3xpZ443ZFUwa | Weekly Mon 02:00 | Active |
 | Backfill (manual, full history) | JH2On4vSuJidzbyU | Manual + webhook | Active |
+| Ads Google Daily Sync (last 30 days) | CZbzvcmagNxvC1JN | Daily 05:00 | Active |
+| Ads Meta Daily Sync (last 30 days) | vuQOMC0tnTaZkMTC | Daily 05:00 | Active |
 
 ## Monitoring Workflows
 

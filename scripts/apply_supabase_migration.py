@@ -18,6 +18,9 @@ import urllib.request
 from pathlib import Path
 
 PROJECT_REF = "ybznbfezrdgzgptxkgul"
+# Cloudflare WAF blocks the default urllib User-Agent with error 1010 on this endpoint --
+# same issue already documented and worked around in scripts/backfill_missing_months.py.
+MGMT_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 
 
 def run_query(token: str, sql: str) -> dict:
@@ -29,6 +32,7 @@ def run_query(token: str, sql: str) -> dict:
         headers={
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
+            "User-Agent": MGMT_UA,
         },
     )
     with urllib.request.urlopen(req, timeout=120) as resp:
@@ -47,8 +51,14 @@ def main() -> int:
         return 1
 
     sql = Path(sys.argv[1]).read_text()
-    # Management API runs one statement at a time for some setups; split on semicolons.
-    statements = [s.strip() for s in sql.split(";") if s.strip() and not s.strip().startswith("--")]
+    # Strip full-line comments BEFORE splitting on semicolons. Filtering whole statements
+    # that merely *start* with "--" silently drops real SQL whenever a comment block sits
+    # directly in front of a statement (e.g. a multi-line header comment before the first
+    # CREATE TABLE) -- caught this the hard way on 003_create_marketing_ads_tables.sql,
+    # where it silently dropped the first table entirely. Doesn't handle inline trailing
+    # comments or "--" inside string literals; none of this repo's migrations use those.
+    lines = [line for line in sql.split("\n") if not line.strip().startswith("--")]
+    statements = [s.strip() for s in "\n".join(lines).split(";") if s.strip()]
     results = []
     import time
     for i, stmt in enumerate(statements):
