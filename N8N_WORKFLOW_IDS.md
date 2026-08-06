@@ -14,6 +14,7 @@ Last verified: 2026-08-06
 | Backfill (manual, full history) | JH2On4vSuJidzbyU | Manual + webhook | Active |
 | Ads Google Daily Sync (last 30 days) | CZbzvcmagNxvC1JN | Daily 05:00 | Active |
 | Ads Meta Daily Sync (last 30 days) | vuQOMC0tnTaZkMTC | Daily 05:00 | Active |
+| Analytics GA Daily Sync | j4gatZqXaw9tk55x | Daily 06:00 | Active |
 
 ## Monitoring Workflows
 

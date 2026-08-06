@@ -1,0 +1,331 @@
+{
+  "name": "Analytics GA Daily Sync",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "id": "aaaaaaaa-0011-0011-0011-000000000001",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 400],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "aaaaaaaa-0011-0011-0011-000000000002",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 580],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "analytics-ga-daily",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "webhookId": "88b7948f-0803-4e06-86de-cf948eab3973"
+    },
+    {
+      "id": "aaaaaaaa-0011-0011-0011-000000000101",
+      "name": "Fetch GA Totals",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 200],
+      "parameters": {
+        "method": "GET",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/16fd6omC0tZmb_6fmJdggXqvQ2KCi8-SYoJzZqL-KcSM/values/Daily%20metrics%20sheet!L13:U",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "valueRenderOption", "value": "UNFORMATTED_VALUE" }
+          ]
+        },
+        "options": {
+          "response": { "response": { "responseFormat": "json" } }
+        }
+      },
+      "credentials": {
+        "googleApi": { "id": "vwfaClhDT4B21w9V", "name": "Google Service Account (Sheets/Drive/Docs)" }
+      }
+    },
+    {
+      "id": "aaaaaaaa-0011-0011-0011-000000000102",
+      "name": "Fetch GA Source",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 400],
+      "parameters": {
+        "method": "GET",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/16fd6omC0tZmb_6fmJdggXqvQ2KCi8-SYoJzZqL-KcSM/values/Traffic%20sources!A1:H",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "valueRenderOption", "value": "UNFORMATTED_VALUE" }
+          ]
+        },
+        "options": {
+          "response": { "response": { "responseFormat": "json" } }
+        }
+      },
+      "credentials": {
+        "googleApi": { "id": "vwfaClhDT4B21w9V", "name": "Google Service Account (Sheets/Drive/Docs)" }
+      }
+    },
+    {
+      "id": "aaaaaaaa-0011-0011-0011-000000000103",
+      "name": "Fetch GA Geo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 600],
+      "parameters": {
+        "method": "GET",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/16fd6omC0tZmb_6fmJdggXqvQ2KCi8-SYoJzZqL-KcSM/values/Geo%20data!A1:J",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "valueRenderOption", "value": "UNFORMATTED_VALUE" }
+          ]
+        },
+        "options": {
+          "response": { "response": { "responseFormat": "json" } }
+        }
+      },
+      "credentials": {
+        "googleApi": { "id": "vwfaClhDT4B21w9V", "name": "Google Service Account (Sheets/Drive/Docs)" }
+      }
+    },
+    {
+      "id": "aaaaaaaa-0011-0011-0011-000000000004",
+      "name": "Transform GA Totals",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 200],
+      "parameters": {
+        "jsCode": "// Chunks into one OUTPUT ITEM per 100-row batch. The downstream Upsert node references\n// $json (the current item), not $input.all() -- so n8n's default per-item node execution\n// naturally sends one POST per batch instead of one giant unbatched request. This is what\n// crashed the previous version (NodeCrashedError, likely OOM sending up to 11,350 rows in a\n// single POST -- same class of problem docs/project-architecture.md already documents for\n// orders-cool.json). No loop node, no Code-node credential/helper APIs needed -- this only\n// uses $input.first() and return [...], the most basic Code-node capabilities.\n//\n// Also confirmed live: this.getCredentials() does NOT exist in this n8n instance's Code-node\n// sandbox (JS Task Runner architecture) -- credentialed calls must go through native nodes.\n\nfunction serialToISODate(serial) {\n  const epochMs = Date.UTC(1899, 11, 30);\n  return new Date(epochMs + serial * 86400000).toISOString().slice(0, 10);\n}\n\nconst resp = $input.first().json;\nconst rows = (resp.values || []).slice(1); // skip header row\nconst transformed = [];\n\nfor (const r0 of rows) {\n  const r = r0.map(v => v === '' ? null : v);\n  const [dateSerial, sessions, totalUsers, newUsers, views, viewsPerSession, bounceRate, avgSessionLengthSec, conversions, userConversionRate] = r;\n  if (dateSerial == null) continue;\n  transformed.push({\n    date: serialToISODate(dateSerial),\n    sessions: sessions ?? null,\n    total_users: totalUsers ?? null,\n    new_users: newUsers ?? null,\n    views: views ?? null,\n    views_per_session: viewsPerSession ?? null,\n    bounce_rate: bounceRate ?? null,\n    avg_session_length_sec: avgSessionLengthSec ?? null,\n    conversions: conversions ?? null,\n    user_conversion_rate: userConversionRate ?? null,\n    synced_at: new Date().toISOString(),\n  });\n}\n\nconst BATCH = 100;\nconst results = [];\nfor (let i = 0; i < transformed.length; i += BATCH) {\n  results.push({ json: { rows: transformed.slice(i, i + BATCH), total_rows: transformed.length } });\n}\nif (results.length === 0) results.push({ json: { rows: [], total_rows: 0 } });\nreturn results;"
+      }
+    },
+    {
+      "id": "aaaaaaaa-0011-0011-0011-000000000005",
+      "name": "Transform GA Source",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 400],
+      "parameters": {
+        "jsCode": "function serialToISODate(serial) {\n  const epochMs = Date.UTC(1899, 11, 30);\n  return new Date(epochMs + serial * 86400000).toISOString().slice(0, 10);\n}\n\nconst resp = $input.first().json;\nconst rows = (resp.values || []).slice(1);\nconst transformed = [];\n\nfor (const r0 of rows) {\n  const r = r0.map(v => v === '' ? null : v);\n  const [dateSerial, sourceMedium, sessions, totalUsers, conversions, engagementRate, engagedSessions, beginCheckoutCount] = r;\n  if (dateSerial == null || !sourceMedium) continue;\n  transformed.push({\n    date: serialToISODate(dateSerial),\n    source_medium: sourceMedium,\n    sessions: sessions ?? null,\n    total_users: totalUsers ?? null,\n    conversions: conversions ?? null,\n    engagement_rate: engagementRate ?? null,\n    engaged_sessions: engagedSessions ?? null,\n    begin_checkout_count: beginCheckoutCount ?? null,\n    synced_at: new Date().toISOString(),\n  });\n}\n\nconst BATCH = 100;\nconst results = [];\nfor (let i = 0; i < transformed.length; i += BATCH) {\n  results.push({ json: { rows: transformed.slice(i, i + BATCH), total_rows: transformed.length } });\n}\nif (results.length === 0) results.push({ json: { rows: [], total_rows: 0 } });\nreturn results;"
+      }
+    },
+    {
+      "id": "aaaaaaaa-0011-0011-0011-000000000006",
+      "name": "Transform GA Geo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 600],
+      "parameters": {
+        "jsCode": "function serialToISODate(serial) {\n  const epochMs = Date.UTC(1899, 11, 30);\n  return new Date(epochMs + serial * 86400000).toISOString().slice(0, 10);\n}\n\nconst resp = $input.first().json;\nconst rows = (resp.values || []).slice(1);\nconst transformed = [];\n\nfor (const r0 of rows) {\n  const r = r0.map(v => v === '' ? null : v);\n  const [dateSerial, city, region, country, sessions, totalUsers, newUsers, conversions, userConversionRate, beginCheckoutCount] = r;\n  if (dateSerial == null || !city) continue;\n  transformed.push({\n    date: serialToISODate(dateSerial),\n    city: city,\n    region: region ?? null,\n    country: country ?? null,\n    sessions: sessions ?? null,\n    total_users: totalUsers ?? null,\n    new_users: newUsers ?? null,\n    conversions: conversions ?? null,\n    user_conversion_rate: userConversionRate ?? null,\n    begin_checkout_count: beginCheckoutCount ?? null,\n    synced_at: new Date().toISOString(),\n  });\n}\n\nconst BATCH = 100;\nconst results = [];\nfor (let i = 0; i < transformed.length; i += BATCH) {\n  results.push({ json: { rows: transformed.slice(i, i + BATCH), total_rows: transformed.length } });\n}\nif (results.length === 0) results.push({ json: { rows: [], total_rows: 0 } });\nreturn results;"
+      }
+    },
+    {
+      "id": "aaaaaaaa-0011-0011-0011-000000000007",
+      "name": "Upsert GA Totals",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [920, 200],
+      "parameters": {
+        "method": "POST",
+        "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/analytics_ga_daily_totals",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "SUPABASE_SERVICE_KEY" },
+            { "name": "Authorization", "value": "Bearer SUPABASE_SERVICE_KEY" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "resolution=merge-duplicates,return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.rows }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "aaaaaaaa-0011-0011-0011-000000000008",
+      "name": "Upsert GA Source",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [920, 400],
+      "parameters": {
+        "method": "POST",
+        "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/analytics_ga_daily_source",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "SUPABASE_SERVICE_KEY" },
+            { "name": "Authorization", "value": "Bearer SUPABASE_SERVICE_KEY" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "resolution=merge-duplicates,return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.rows }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "aaaaaaaa-0011-0011-0011-000000000009",
+      "name": "Upsert GA Geo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [920, 600],
+      "parameters": {
+        "method": "POST",
+        "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/analytics_ga_daily_geo",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "SUPABASE_SERVICE_KEY" },
+            { "name": "Authorization", "value": "Bearer SUPABASE_SERVICE_KEY" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "resolution=merge-duplicates,return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.rows }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "aaaaaaaa-0011-0011-0011-000000000010",
+      "name": "Log Sync Totals",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1140, 200],
+      "parameters": {
+        "method": "POST",
+        "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/sync_log",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "SUPABASE_SERVICE_KEY" },
+            { "name": "Authorization", "value": "Bearer SUPABASE_SERVICE_KEY" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify([{ workflow: 'analytics-ga-totals-daily', started_at: $execution.startedAt, completed_at: new Date().toISOString(), date_range: 'full', rows_upserted: $('Transform GA Totals').item.json.rows.length, status: 'success', error_message: null }]) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "aaaaaaaa-0011-0011-0011-000000000011",
+      "name": "Log Sync Source",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1140, 400],
+      "parameters": {
+        "method": "POST",
+        "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/sync_log",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "SUPABASE_SERVICE_KEY" },
+            { "name": "Authorization", "value": "Bearer SUPABASE_SERVICE_KEY" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify([{ workflow: 'analytics-ga-source-daily', started_at: $execution.startedAt, completed_at: new Date().toISOString(), date_range: 'full', rows_upserted: $('Transform GA Source').item.json.rows.length, status: 'success', error_message: null }]) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "aaaaaaaa-0011-0011-0011-000000000012",
+      "name": "Log Sync Geo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1140, 600],
+      "parameters": {
+        "method": "POST",
+        "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/sync_log",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "SUPABASE_SERVICE_KEY" },
+            { "name": "Authorization", "value": "Bearer SUPABASE_SERVICE_KEY" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify([{ workflow: 'analytics-ga-geo-daily', started_at: $execution.startedAt, completed_at: new Date().toISOString(), date_range: 'full', rows_upserted: $('Transform GA Geo').item.json.rows.length, status: 'success', error_message: null }]) }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[
+        { "node": "Fetch GA Totals", "type": "main", "index": 0 },
+        { "node": "Fetch GA Source", "type": "main", "index": 0 },
+        { "node": "Fetch GA Geo", "type": "main", "index": 0 }
+      ]]
+    },
+    "Webhook Trigger": {
+      "main": [[
+        { "node": "Fetch GA Totals", "type": "main", "index": 0 },
+        { "node": "Fetch GA Source", "type": "main", "index": 0 },
+        { "node": "Fetch GA Geo", "type": "main", "index": 0 }
+      ]]
+    },
+    "Fetch GA Totals": {
+      "main": [[{ "node": "Transform GA Totals", "type": "main", "index": 0 }]]
+    },
+    "Fetch GA Source": {
+      "main": [[{ "node": "Transform GA Source", "type": "main", "index": 0 }]]
+    },
+    "Fetch GA Geo": {
+      "main": [[{ "node": "Transform GA Geo", "type": "main", "index": 0 }]]
+    },
+    "Transform GA Totals": {
+      "main": [[{ "node": "Upsert GA Totals", "type": "main", "index": 0 }]]
+    },
+    "Transform GA Source": {
+      "main": [[{ "node": "Upsert GA Source", "type": "main", "index": 0 }]]
+    },
+    "Transform GA Geo": {
+      "main": [[{ "node": "Upsert GA Geo", "type": "main", "index": 0 }]]
+    },
+    "Upsert GA Totals": {
+      "main": [[{ "node": "Log Sync Totals", "type": "main", "index": 0 }]]
+    },
+    "Upsert GA Source": {
+      "main": [[{ "node": "Log Sync Source", "type": "main", "index": 0 }]]
+    },
+    "Upsert GA Geo": {
+      "main": [[{ "node": "Log Sync Geo", "type": "main", "index": 0 }]]
+    }
+  }
+}

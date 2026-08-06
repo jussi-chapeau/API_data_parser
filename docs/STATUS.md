@@ -259,30 +259,144 @@ Supermetrics *Sheets* query — superseded by the API approach and no longer nee
 
 #### Google Sheets + Docs credential setup (one service account, covers both)
 
-Docs write access is for a future workstream, not yet scoped — set the service account and
-API enablement up now, defer sharing individual Docs until that work starts.
+**Done 2026-08-06:** GCP project "Apukuski BI tool" (reused existing, not a new project),
+Sheets + Drive APIs enabled, service account
+`apukuski-bi-dashboard@apukuski-bi-tool.iam.gserviceaccount.com` created, JSON key generated.
+GA Google Sheet ("Export Google Analytics -> Apukuski Dashboard") shared with it as Viewer.
 
-1. Google Cloud Console → new or existing project (can reuse this same project for workstream
-   A's Maps Geocoding API key — one project, multiple APIs enabled is fine).
-2. APIs & Services → Library → enable **Google Sheets API**, **Google Docs API**, and
-   **Google Drive API** (Drive is needed for n8n's file picker to browse by name; without it
-   you can still target files by ID/URL directly).
-3. IAM & Admin → Service Accounts → Create Service Account (e.g. `n8n-marketing-sync`). No
-   project IAM role needed — access comes from per-file sharing, not IAM.
-4. On the service account → Keys → Add Key → JSON. Download it — treat like the Supabase
-   service key: never commit it, never paste it in docs/chat, N8N's credential store only.
-5. Share access per file, least-privilege:
-   - Each of the 3 marketing Sheets → Share → add the service account email
-     (`n8n-marketing-sync@<project-id>.iam.gserviceaccount.com`) → **Viewer**.
-   - Docs: nothing to share yet — do this later, per-doc, with **Editor**, when that
-     workstream starts.
-6. In N8N: Credentials → New → the Google service-account credential type (shared across
-   Sheets/Docs/Drive nodes in n8n) → paste the service account email + private key from the
-   JSON. Name it something identifiable, e.g. "Google Service Account — Apukuski Marketing".
-7. Verify: add a Google Sheets node, pick this credential, point it at one of the 3 sheets by
-   URL, run a manual "Read Rows" test before wiring up the real workflow.
-8. When Docs write work starts later: same credential, just share the specific target Doc(s)
-   with Editor access and add a Google Docs node — no Cloud Console changes needed.
+Two real bugs caught and fixed getting the key into `.env` and N8N:
+- `GOOGLE_SERVICE_ACCOUNT_EMAIL` was silently empty on the first pass (only the private key
+  got pasted) — my own verification check was flawed (confirmed the line existed, not that it
+  had a value). Caught by cross-checking against the Google Sheets sharing dialog, which
+  showed the real email in plaintext (not sensitive, just an identifier).
+- The pasted `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` had a stray trailing comma (`...END PRIVATE
+  KEY-----\n",` — copied along with the JSON field's trailing comma). Would have broken PEM
+  parsing. Fixed directly in `.env`.
+- Also, separately: the `googleApi` N8N credential schema's `inpersonate`/`httpNode` fields
+  use JSON Schema `if/properties` conditionals that vacuously pass when the field is *absent*
+  (not just when falsy) — omitting them entirely triggered spurious
+  `required: delegatedEmail/httpWarning/scopes` errors; fixed by sending them explicitly as
+  `false`.
+- N8N public API has no PATCH for credentials (405) — fixed the broken first credential by
+  DELETE + recreate rather than update.
+
+**Verified working, not just assumed:** signed a real JWT with the private key and exchanged
+it for a Google OAuth token directly (`oauth2.googleapis.com/token`) — succeeded, confirming
+the key is cryptographically valid end-to-end, not just accepted by n8n's schema. Final N8N
+credential: type `googleApi`, id `gm81SgSEs5KKRqZx`, name
+"Google Service Account (Sheets/Drive/Docs)".
+
+**Live sheet verified 2026-08-06** (`GA_SHEET_ID` now in `.env`, spreadsheet
+`16fd6omC0tZmb_6fmJdggXqvQ2KCi8-SYoJzZqL-KcSM`): fetched real spreadsheet metadata + header
+rows via the Sheets API (not just trusting the xlsx snapshot). All 4 tabs match exactly —
+`Daily metrics sheet` (header row 13, data from column L, 11 blank lead columns, confirmed
+live), `Traffic sources` (header row 1), `Geo data` (header row 1), `SupermetricsQueries`
+(metadata, ignore). Row counts slightly higher than the snapshot (expected daily growth).
+
+**One real finding that changes the transform:** with `valueRenderOption=UNFORMATTED_VALUE`,
+date cells come back as **Google Sheets serial numbers** (e.g. `45658` = 2025-01-01, epoch
+1899-12-30), not date strings. The transform step must convert
+`new Date(Date.UTC(1899, 11, 30) + serial * 86400000)` (or equivalent) before writing to a
+DATE column — passing the raw serial through would either error or silently store garbage.
+All other values (Sessions, Conversions, etc.) came back as clean native numbers, confirming
+no locale-string parsing is needed here, consistent with the earlier xlsx inspection.
+
+Docs write access is for a future workstream, not yet scoped — API enablement is already in
+place, defer sharing individual Docs until that work starts. When that starts: same
+credential, just share the specific target Doc(s) with Editor access and add a Google Docs
+node — no Cloud Console changes needed.
+
+#### GA Supabase tables + N8N workflow — built 2026-08-06
+
+- Migration applied: `supabase/migrations/004_create_ga_analytics_tables.sql` —
+  `analytics_ga_daily_totals` (PK `date`), `analytics_ga_daily_source` (PK
+  `date, source_medium`), `analytics_ga_daily_geo` (PK `date, city, region, country`).
+  Verified via `information_schema.tables`, not just trusted from the apply output.
+- Credential: `googleApi` id `vwfaClhDT4B21w9V`, created with `httpNode: true` +
+  `scopes: spreadsheets.readonly drive.readonly` so it's usable from a generic HTTP Request
+  node via `authentication: predefinedCredentialType` — different requirement than the native
+  Sheets node would need, learned from the credential schema's conditional validation.
+
+**First version (id `LRoZnIJjculgTB6F`, deleted) crashed on first test run** — 1 fetch
+(`values:batchGet`, all 3 ranges, ~3MB response) fanned out to 3 parallel Transform/Upsert
+branches. `Upsert GA Totals` died with `NodeCrashedError` ("n8n may have run out of memory").
+n8n's stored execution data for the crashed run was all synthetic
+`isArtificialRecoveredEventItem` placeholders, not real values — couldn't diagnose from that,
+so reproduced the exact same Sheets fetch independently instead: response really is ~3MB,
+and the `Daily metrics sheet` data itself is completely clean (consistent 10-column rows, no
+anomalies), ruling out malformed data as the cause. Most likely real cause: each Upsert node
+sent its **entire row set in one unbatched POST** (up to 11,350 rows for Geo data) — the same
+class of problem already documented in `docs/project-architecture.md` for `orders-cool.json`
+needing a batch-100 Loop Over Items node. Combined with the shared 3MB payload being cloned
+across 3 parallel branches, this is very likely what exceeded the instance's memory.
+
+**Second version (id `bBKco1x9Z8ulxLZV`, deleted) also failed, immediately** — redesigned as
+3 self-contained Code nodes doing their own JWT-signed fetch via `this.getCredentials`/
+`this.helpers.httpRequest`. Real error this time (not a crash, a clean `TypeError`):
+`this.getCredentials is not a function`. This n8n instance (1.123.67 Cloud) runs Code nodes
+through the newer isolated **JS Task Runner** architecture, which doesn't expose
+`getCredentials` the way older in-process Code node sandboxes did. Confirms credentialed
+calls need to go through native nodes, not Code nodes, on this instance — but also confirmed
+the JWT-signing JS itself was correct (extracted and run locally against real Node.js v24
+with the actual key, real Google OAuth token exchange succeeded independent of n8n).
+
+**Third version (current, id `j4gatZqXaw9tk55x`) — back to native nodes for credentialed I/O,
+fixed the real batching problem directly.** In the *first* crash, `Fetch GA Data` (the native
+HTTP Request node with `predefinedCredentialType`/`googleApi`) had a green checkmark and no
+error — only `Upsert` (the unbatched one) failed. So native-node Google auth was never
+actually broken; conflating that with the batching problem led to an unnecessary Code-node
+rewrite that broke on an unrelated missing API. This version: 3 separate native `Fetch`
+nodes (own range each, no shared 3MB payload/fan-out clone), 3 native `Transform` Code nodes
+(pure JS only — `$input.first()` and `return [...]`, nothing needing credentials or helpers),
+each **emitting one output item per 100-row batch** instead of one item with all rows. The
+`Upsert` nodes reference `$json.rows` (the current item) instead of `$input.all().map(...)` —
+n8n's default behavior is to run a node once per input item, so this alone makes each POST
+request naturally batch-sized without any Split-In-Batches loop node or its cyclic-graph
+topology risk. `Log Sync` runs once per batch too (matches the existing precedent of the
+Python backfill scripts logging once per chunk, not one aggregate row).
+
+(Housekeeping: the private key briefly touched a temp file in `/tmp` instead of the session
+scratchpad during local Node.js testing of the (now-abandoned) Code-node JWT approach —
+caught and deleted immediately, along with the test script.)
+
+**Second test run of the third version: real progress, one small bug.** `Fetch`/`Transform`
+(6 batches for `Daily metrics sheet`, matching 580 rows / 100 correctly) /`Upsert` (6 items,
+all empty — expected, `Prefer: return=minimal`) all completed — **confirms the per-item
+batching design actually works.** `Log Sync Totals` then failed with `JSON parameter needs to
+be valid JSON` — `$json.rows.length` in its expression was reading from its own immediate
+input (`Upsert`'s empty output), not the batch data. Fixed by referencing the named upstream
+node directly: `$('Transform GA Totals').item.json.rows.length` (n8n's cross-node
+item-paired reference), same fix applied to all 3 Log Sync nodes. **Pushed via `PUT
+/workflows/{id}` in place** — confirmed PUT works for workflows (unlike credentials, which
+only support POST create + DELETE) — no more delete+recreate needed for future workflow
+fixes, only for credential fixes.
+
+**Realized I could self-test after all:** no execute-workflow API endpoint exists, but the
+workflow has a Webhook Trigger — activating the workflow makes its production webhook live,
+and `curl -X POST` to that URL triggers a real execution I can then inspect via
+`GET /executions`. Used this to iterate the remaining two bugs without further manual UI
+clicks:
+
+- **Bug 3:** `analytics_ga_daily_source`'s real data proved `conversions` can be fractional
+  (`696.21`) — same GA4 attribution-modeling behavior already handled correctly for Google
+  Ads, missed applying the same caution to GA's migration. Fixed via
+  `supabase/migrations/005_fix_ga_conversions_numeric.sql` (widened `conversions` on all 3
+  GA tables, plus `begin_checkout_count`, from `INTEGER`/plan to `NUMERIC(12,4)` — safe
+  widening on tables that already had real data). Verified via
+  `information_schema.columns`, not just the apply output.
+- **Bug 4:** Sheets returns `""` for some blank numeric cells, not `null` — my `?? null`
+  fallbacks only caught actual null/undefined, not empty string, so `""` reached Postgres as
+  an invalid numeric literal. Fixed by sanitizing each row array (`v === '' ? null : v`)
+  before destructuring, in all 3 Transform nodes, rather than patching each field
+  individually.
+- Both fixes pushed via `PUT /workflows/{id}` in place, re-tested via the webhook each time.
+
+**Confirmed fully working 2026-08-06**, verified against real row counts (not just execution
+status): `analytics_ga_daily_totals` 580 rows, `analytics_ga_daily_source` 5,297 rows,
+`analytics_ga_daily_geo` 11,350 rows — **exact match** to the live sheet's real row counts,
+date range `2025-01-01` to `2026-08-03` across all three. Workflow id `j4gatZqXaw9tk55x`,
+**already active** (from testing via the real production webhook). Added to
+`N8N_WORKFLOW_IDS.md`.
 
 ### C. Backoffice API follow-ups
 - [ ] **Blocked on Backoffice team:** confirm `backfill_route_gsi2pk.py` has run in production
