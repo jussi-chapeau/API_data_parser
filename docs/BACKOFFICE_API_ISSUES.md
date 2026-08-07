@@ -348,7 +348,7 @@ confirm these should be filtered/excluded upstream.
 
 ---
 
-### 15. Confirmed partner channels (Tokmanni, Rusta) produce zero tagged orders
+### 15. Confirmed partner channels (Tokmanni, Rusta, Huutokaupat.com) produce zero tagged orders
 
 Internal config shows a deliberate per-hub origin-tag mapping for a Tokmanni
 partnership — ~20 locations, e.g. `tokmanni-HER`, `tokmanni-VAR`, `tokmanni-MAN`,
@@ -357,45 +357,53 @@ partnership — ~20 locations, e.g. `tokmanni-HER`, `tokmanni-VAR`, `tokmanni-MA
 `tokmanni-TIK`, `tokmanni-MAL`, `tokmanni-TAM`, `tokmanni-ARA`, `tokmanni-HYR`,
 `tokmanni-POR`, `tokmanni-KER` (one path, `/RK`, currently shows as undefined).
 Rusta is a separate confirmed direct-deal partner running Apukuski-specific
-advertising. Related to #9 (`origin` sparse) but distinct — this is about two
-*named, confirmed-live* partnerships, not general sparsity.
+advertising. Huutokaupat.com (the online auction site) is a third confirmed
+partnership that should also be tracked. Related to #9 (`origin` sparse) but
+distinct — this is about *named, confirmed-live* partnerships, not general
+sparsity.
 
 **Reproduce**
 
 Checked every text-bearing field (`origin`, `organizationName`, `content`,
 `stops`, `manual_data`) across the full order history (~9,500+ orders, our
-Supabase copy) for "tokmanni" or "rusta", case-insensitive:
+Supabase copy), case-insensitive, for all three plus four control terms to
+validate the method:
 
-```
-origin ILIKE '%tokmanni%' OR origin ILIKE '%rusta%'  -> 0 rows, ever
-```
+| Term | `origin` | Elsewhere | Verdict |
+|---|---|---|---|
+| Tokmanni | 0 | 2 (coincidental: parking-lot landmark, packing-material description) | **Confirmed gap** |
+| Rusta | 0 | 23 (coincidental: Rusta retail store as a pickup address) | **Confirmed gap** |
+| Huutokaupat.com | 0 | 33 real (auction-lot descriptions, freight notes, pickup instructions — genuinely auction-sourced orders) | **Confirmed gap** |
+| AVY | **5, correctly tagged** | 1 unclear/coincidental | Working as designed — positive control |
+| Asuntosäätiö | 0 | 48, correctly captured in `manual_data` (own tracking mechanism, not `origin`) | Not an `origin` gap — different tracking path |
+| "Jys" | 0 | 61, all actually **"JYSK"** (furniture retailer) as a pickup landmark | False lead / name collision, not a partner |
+| Rakentajien Konevuokraamo / "RK" | 0 | 0 — checked the full company name too, not just the abbreviation | Genuinely absent everywhere |
 
-The only mentions anywhere are coincidental and unrelated to either
-partnership: a parking-lot landmark ("Tokmannin parkkipaikka") on an otherwise
-unrelated moving job, a description of packing materials ("Tokmannin
-muovilaatikkoja"), and 6 orders (across 3 different, unrelated organizations)
-that happen to list a Rusta retail store as a pickup address. None represent a
-partner-referred order.
+AVY's clean result (correctly tagged, findable nowhere else) confirms this
+method reliably distinguishes a working integration from a broken one — the
+zero results for Tokmanni/Rusta/Huutokaupat.com aren't a search-methodology
+gap.
 
 **Then checked directly against the live API**, to rule out a sync gap: fetched
 `/order` + `/manual-order` day-by-day for the last 45 days
 (2026-06-23–2026-08-07, 770 records, with retry/backoff per the pattern in #7).
-Identical result — same order IDs, same zero matches. **This rules out a sync
-gap**: our pipeline faithfully mirrors what the API returns; the absence is at
-the source, not lost in transit.
+Identical result for every term above — same order IDs, same zero matches for
+the three confirmed gaps. **This rules out a sync gap**: our pipeline
+faithfully mirrors what the API returns; the absence is at the source, not
+lost in transit.
 
-**Impact** — if these partnerships are live and orders are actually flowing
-through them, that volume is currently indistinguishable from ordinary
-untagged `app` orders in every downstream system (Supabase, reporting, the BI
-chatbot). Any revenue-share or attribution agreement tied to these channels
-cannot be verified from API data at all right now.
+**Impact** — if these three partnerships are live and orders are actually
+flowing through them, that volume is currently indistinguishable from
+ordinary untagged `app` orders in every downstream system (Supabase,
+reporting, the BI chatbot). Any revenue-share or attribution agreement tied
+to these channels cannot be verified from API data at all right now.
 
-**Requested** — confirm whether the Tokmanni/Rusta origin-tagging integration
-is actually wired into order creation and live. If live, please explain why
-zero tagged orders have appeared in `/order`/`/manual-order` over the last 45
-days — check whether the tag is being set but stripped before the order
-reaches these endpoints. If not yet live, an ETA would help us know when this
-becomes measurable.
+**Requested** — confirm whether the Tokmanni/Rusta/Huutokaupat.com
+origin-tagging integrations are actually wired into order creation and live.
+If live, please explain why zero tagged orders have appeared in
+`/order`/`/manual-order` over the last 45 days — check whether the tag is
+being set but stripped before the order reaches these endpoints. If not yet
+live, an ETA would help us know when this becomes measurable.
 
 ---
 
@@ -417,7 +425,7 @@ becomes measurable.
 | 12 | No unscheduled state; no pagination | P3 | Clarify; add `limit`/`offset` |
 | 13 | Possible same-day indexing lag | P3 | Confirm and document |
 | 14 | `/manual-order` record with no `orderId` | P3 | Backfill ID or filter upstream |
-| 15 | Tokmanni/Rusta partner channels: zero tagged orders | P2 | Confirm integration is live; explain the gap |
+| 15 | Tokmanni/Rusta/Huutokaupat.com partner channels: zero tagged orders | P2 | Confirm integrations are live; explain the gap |
 
 **If only three are actioned:** #3 (`userId`) unlocks all customer analytics,
 #2 stops revenue being misreported, #1 recovers the entire routes dataset.
