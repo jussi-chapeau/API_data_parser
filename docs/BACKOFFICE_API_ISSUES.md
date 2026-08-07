@@ -376,7 +376,7 @@ validate the method:
 | Huutokaupat.com | 0 | 33 real (auction-lot descriptions, freight notes, pickup instructions — genuinely auction-sourced orders) | **Confirmed gap** |
 | AVY | **5, correctly tagged** | 1 unclear/coincidental | Working as designed — positive control |
 | Asuntosäätiö | 0 | 48, correctly captured in `manual_data` (own tracking mechanism, not `origin`) | Not an `origin` gap — different tracking path |
-| "Jys" | 0 | 61, all actually **"JYSK"** (furniture retailer) as a pickup landmark | False lead / name collision, not a partner |
+| Jysk | 0 | 61 (coincidental: JYSK retail store used as a pickup landmark) | Same pattern as Rusta/Tokmanni's coincidental mentions — no tracked partnership |
 | Rakentajien Konevuokraamo / "RK" | 0 | 0 — checked the full company name too, not just the abbreviation | Genuinely absent everywhere |
 
 AVY's clean result (correctly tagged, findable nowhere else) confirms this
