@@ -18,11 +18,78 @@ question, now fixed), and the new `orders.is_asuntosaatio_gig` flag + value-corr
 ## Active workstreams
 
 ### A. Stops/address structured parsing
-- [ ] Get Google Maps Geocoding API key → add to `.env`
-- [ ] Small test batch (~50–100 orders) to validate parsing + measure real throughput/cost before full run
-- [ ] Supabase migration: add `pickup_city`, `pickup_postal_code`, `delivery_city`, `delivery_postal_code`, `waypoints_parsed` (jsonb), `stop_building_details` (jsonb) to `orders`
-- [ ] Update Transform Orders node in all 4 N8N workflows to parse+geocode stops going forward
-- [ ] Historical backfill script + run (~11,500 geocoding calls across 11,120 orders)
+
+**Plan changed 2026-08-07:** Jussi shared internal docs for an existing Apukuski endpoint,
+`/places/geocode` (Staff API, `backend/src/utils/geocode.py`). Using this instead of
+provisioning our own Google Maps key:
+- `mode=geocode&version=2` returns pre-parsed `{address, postalCode, city, latitude,
+  longitude}` — does the Google-response address-component parsing for us (locality
+  fallback to `administrative_area_level_*`, etc.), work we'd otherwise have to replicate.
+- Reuses Apukuski's existing `GoogleMapsToken` (Secrets Manager) — no new key, no new
+  billing setup. **The actual Google Maps API cost still lands on Apukuski's existing
+  billing either way** — using this endpoint doesn't make the calls free, just avoids
+  provisioning a separate key.
+- **No auth, no rate limiting** on this endpoint — explicitly documented as "treat the URL
+  as sensitive." Decided: pace our own calls (0.3s between requests, not full-speed), and
+  give the Staff API's owner a heads-up before running the real backfill (~11,500 calls) —
+  this is shared production infrastructure, not something to route a batch job through
+  silently just because it's technically reachable.
+- Decided forward geocode (address text → structured city/postal) over reverse geocode
+  (existing coordinates → formatted-address string): most stops already have GPS
+  coordinates from the app, but reverse mode only returns a plain string, not structured
+  fields — would reintroduce the parsing work version=2 avoids. Trade-off: forward geocode
+  re-derives location from address text rather than using the app's captured GPS pin. Fine
+  for regional/hub reporting; not survey-grade precision.
+- **Get Google Maps Geocoding API key → add to `.env`** — no longer needed, dropped.
+
+**Real data doesn't match the original assumption — found while building the parser, before
+any API calls:** only **579 of 6,941 platform orders (8.3%)** have `stops` as a structured
+JSON array with an explicit pickup/delivery role. The other **91.7%** of platform orders —
+and effectively all 4,430 manual orders — have `stops` as a single plain address string
+with no role marker at all. The original plan's clean `pickup_city`/`delivery_city` split
+only applies directly to that 8.3%. **Designed around this rather than guessing a role
+onto unlabeled single addresses**: `waypoints_parsed` (new jsonb column) is the
+comprehensive source of truth — every stop we can extract and geocode, tagged
+`role: 'pickup'/'delivery'/'unknown'` — while `pickup_city`/`delivery_city` only populate
+when the role is actually known. Verified this design choice against a random 500-row
+sample of real `stops` data before building anything further: 500/500 produced at least one
+address candidate (zero outright parse failures), 62 role-known vs 469 role-unknown
+waypoints — matches the 8.3% population rate.
+
+- [x] Supabase migration applied: `pickup_city`, `pickup_postal_code`, `delivery_city`,
+      `delivery_postal_code`, `waypoints_parsed` (jsonb), `stop_building_details` (jsonb) —
+      `supabase/migrations/007_add_stop_geo_enrichment.sql`, verified via
+      `information_schema.columns`.
+- [x] Stops parser written and validated against real data (parse-only, no API calls
+      needed): `scripts/geocode_stops.py`, `--dry-run` mode. Handles both the structured-JSON
+      and plain-text `stops` formats; deliberately does not try to split multi-address
+      freeform manual-order text (too fragile) — those either geocode as one candidate or
+      fail cleanly, no fabricated structure.
+- [x] Geocode-calling logic written (forward geocode, `version=2`, retry/backoff, paced
+      0.3s between calls) — same script, real-run mode.
+- [ ] **Blocked: need the actual production Staff API URL.** Not in `.env` (the checked-in
+      `API_ID` is a lower environment per Jussi's doc) — needs pulling from CloudFormation
+      output `Staff{ApiName}Api-production` or the deployed staff app's runtime config.
+      Nothing below can be tested or run for real until this is in `.env` as
+      `STAFF_GEOCODE_API_URL`.
+- [ ] **Open question, needs a decision:** for the 91.7% of platform orders (+ manual
+      orders) with an unlabeled single address, is there a business-logic way to know
+      whether that recorded stop is conventionally the pickup or the delivery (e.g. "pickup
+      is always the hub, only the customer-facing stop gets recorded")? If yes, we can
+      populate `pickup_city`/`delivery_city` for far more than 8.3% of orders. If no,
+      `waypoints_parsed` with `role: 'unknown'` is what we've got, and that's fine —
+      city/postal_code is still useful for regional reporting even without a pickup/delivery
+      label.
+- [ ] Small test batch (~50–100 orders) against the real endpoint, once the URL is
+      available — measure real throughput/error rate before committing to the full backfill
+- [ ] Give the Staff API's owner a heads-up before running the real backfill (see above)
+- [ ] Update Transform Orders in all 4 N8N workflows to geocode going forward — **not done
+      yet, deliberately**: won't push untested logic against an unverified endpoint into
+      live production order-sync workflows. Code is ready in `scripts/geocode_stops.py`'s
+      `parse_stops()`/`call_geocode()` to port over once the small test batch confirms the
+      endpoint behaves as documented.
+- [ ] Historical backfill run (~11,500 geocoding calls across 11,120 orders) — script ready,
+      blocked on the same URL + test batch
 
 ### B. Marketing data ingestion (Google Ads / Meta / GA)
 
