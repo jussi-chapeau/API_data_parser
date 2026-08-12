@@ -1,0 +1,207 @@
+{
+  "name": "Payments Stripe Daily Sync (last 30 days)",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "id": "aaaaaaaa-000a-000a-000a-000000000001",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 5 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "aaaaaaaa-000a-000a-000a-000000000002",
+      "name": "Fetch Stripe Checkout Sessions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Paginated fetch of Stripe checkout sessions for the last 30 days, with fee/refund\n// detail nested-expanded in the same call -- confirmed live 2026-08-12 this needs no\n// extra per-row API call, unlike Paytrail (which has no list endpoint at all -- see\n// payments-paytrail sync via the callback workflow instead). Uses this.helpers.httpRequest\n// with a manually-provided auth header rather than an n8n credential -- Code nodes on this\n// instance don't expose this.getCredentials(). Also confirmed live: this sandbox has no\n// URLSearchParams global either (a real 'URLSearchParams is not defined' on first deploy),\n// so the query string is built manually below instead.\nconst STRIPE_API_KEY = 'STRIPE_API_KEY_PLACEHOLDER';\n\nconst now = Math.floor(Date.now() / 1000);\nconst THIRTY_DAYS = 30 * 24 * 60 * 60;\nconst createdGte = now - THIRTY_DAYS;\n\nlet sessions = [];\nlet startingAfter = null;\nlet page = 0;\nconst MAX_PAGES = 50; // 100/page ceiling -- generous headroom over real ~30d volume\n\nwhile (page < MAX_PAGES) {\n  const params = [\n    ['created[gte]', String(createdGte)],\n    ['limit', '100'],\n    ['expand[]', 'data.payment_intent.latest_charge.balance_transaction'],\n  ];\n  if (startingAfter) params.push(['starting_after', startingAfter]);\n  const qs = params.map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');\n\n  const resp = await this.helpers.httpRequest({\n    method: 'GET',\n    url: `https://api.stripe.com/v1/checkout/sessions?${qs}`,\n    headers: { Authorization: `Bearer ${STRIPE_API_KEY}` },\n    json: true,\n  });\n\n  sessions = sessions.concat(resp.data || []);\n  page += 1;\n  if (!resp.has_more) break;\n  startingAfter = resp.data[resp.data.length - 1].id;\n}\n\nreturn sessions.map((s) => ({ json: s }));"
+      }
+    },
+    {
+      "id": "aaaaaaaa-000a-000a-000a-000000000003",
+      "name": "Transform Stripe Payments",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// GDPR: strips billing_details/customer_details/receipt_email/customer id entirely --\n// only transactional fields needed for reconciliation/reporting cross the boundary into\n// raw_payload or normalized columns. See migration 008 comment.\nfunction clean(session) {\n  const pi = session.payment_intent;\n  const piObj = pi && typeof pi === 'object' ? pi : null;\n  const charge = piObj ? piObj.latest_charge : null;\n  const chargeObj = charge && typeof charge === 'object' ? charge : null;\n  const bt = chargeObj ? chargeObj.balance_transaction : null;\n  const btObj = bt && typeof bt === 'object' ? bt : null;\n\n  return {\n    id: session.id,\n    payment_intent_id: piObj ? piObj.id : pi,\n    charge_id: chargeObj ? chargeObj.id : charge,\n    status: session.status,\n    payment_status: session.payment_status,\n    amount_total: session.amount_total,\n    currency: session.currency,\n    created: session.created,\n    payment_method_types: session.payment_method_types,\n    charge_created: chargeObj ? chargeObj.created : null,\n    charge_paid: chargeObj ? chargeObj.paid : null,\n    amount_refunded: chargeObj ? chargeObj.amount_refunded : null,\n    payment_method_brand:\n      chargeObj && chargeObj.payment_method_details\n        ? (chargeObj.payment_method_details.card\n            ? chargeObj.payment_method_details.card.brand\n            : chargeObj.payment_method_details.type)\n        : null,\n    balance_transaction_fee: btObj ? btObj.fee : null,\n    balance_transaction_net: btObj ? btObj.net : null,\n    metadata: session.metadata || {},\n  };\n}\n\nconst results = [];\nfor (const item of $input.all()) {\n  const s = item.json;\n  const c = clean(s);\n  const orderId = (s.metadata && s.metadata.order_id) || null;\n\n  const row = {\n    id: s.id,\n    payment_intent_id: c.payment_intent_id,\n    order_id: orderId,\n    status: s.payment_status || s.status || null,\n    amount_cents: s.amount_total != null ? s.amount_total : null,\n    currency: s.currency || null,\n    payment_method_type: c.payment_method_brand,\n    created_at: s.created ? new Date(s.created * 1000).toISOString() : null,\n    paid_at: c.charge_paid && c.charge_created ? new Date(c.charge_created * 1000).toISOString() : null,\n    fee_cents: c.balance_transaction_fee,\n    refund_amount_cents: c.amount_refunded,\n    raw_payload: c,\n    synced_at: new Date().toISOString(),\n  };\n\n  if (row.id) results.push({ json: row });\n}\n\nreturn results;"
+      }
+    },
+    {
+      "id": "aaaaaaaa-000a-000a-000a-000000000004",
+      "name": "Upsert Stripe Payments",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/payments_stripe?on_conflict=id",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $input.all().map(i => i.json) }}",
+        "options": {}
+      },
+      "executeOnce": true
+    },
+    {
+      "id": "aaaaaaaa-000a-000a-000a-000000000005",
+      "name": "Log Sync",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/sync_log",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify([{ workflow: 'payments-stripe-daily', started_at: $execution.startedAt, completed_at: new Date().toISOString(), date_range: 'last_30_days', rows_upserted: $('Transform Stripe Payments').all().length, status: 'success', error_message: null }]) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "aaaaaaaa-000a-000a-000a-000000000006",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        480
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "payments-stripe-daily",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "webhookId": "aaaaaaaa-000a-000a-000a-000000000006"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Stripe Checkout Sessions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Stripe Checkout Sessions": {
+      "main": [
+        [
+          {
+            "node": "Transform Stripe Payments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transform Stripe Payments": {
+      "main": [
+        [
+          {
+            "node": "Upsert Stripe Payments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Stripe Payments": {
+      "main": [
+        [
+          {
+            "node": "Log Sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Stripe Checkout Sessions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

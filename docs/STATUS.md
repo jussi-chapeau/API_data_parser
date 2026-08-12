@@ -6,12 +6,29 @@ whoever starts a session reads it first, before assuming what's done vs. pending
 
 Update this file, don't create a new one — one canonical status doc avoids drift.
 
-**Last updated:** 2026-08-06
+**Last updated:** 2026-08-12
 
-**Two ad-hoc production items closed out today, outside the lettered workstreams below** —
-full detail in `CHANGELOG.md` (2026-08-06 entry) and `docs/GOTCHAS.md`, not duplicated here:
-a ~2-day silent Supabase-key outage across 8 workflows (found while answering a gig-count
-question, now fixed), and the new `orders.is_asuntosaatio_gig` flag + value-correction logic.
+**Ad-hoc production items closed out, outside the lettered workstreams below** — full detail
+in `CHANGELOG.md` and `docs/GOTCHAS.md`, not duplicated here: a ~2-day silent Supabase-key
+outage across 8 workflows (2026-08-06), the `orders.is_asuntosaatio_gig` flag +
+value-correction logic (2026-08-06), and the unscheduled-orders sync gap fix (2026-08-08) —
+`/order` was silently omitting orders without `firstSchedule` for the project's entire
+history; fixed via `includeUnscheduled=true` in all 4 order-sync workflows + historical
+backfill. This closes the workstream C item below and partly explains issue #15
+(Huutokaupat.com) in `BACKOFFICE_API_ISSUES.md`.
+
+**Historical backfill confirmed complete 2026-08-08:** `scripts/backfill_unscheduled_orders.py`
+found and upserted **205 orders** total (Apr 1, May 94, Jun 28, Jul 63, Aug 19 — Jun/Jul match
+numbers already noted in this doc before the fix shipped, good consistency check). Verified
+directly in Supabase: `first_schedule IS NULL` count went from 1 → 205, and the 4 specific
+orders missing from the 2026-08-07 daily report (`0562490e`, `31a065c9`, `392fe50e`,
+`ca8088f7`) are all present with `first_schedule: null`; 3 of those 4 carry a
+`huutokaupat.com` tag in `content`. Cross-checked against issue #15's partner-channel sweep:
+re-ran the same 45-day live-API diff with `includeUnscheduled=true` — **9 of the 96 hidden
+orders in that window were Huutokaupat.com-tagged; Tokmanni and Rusta had zero matches in the
+hidden set**, so their "confirmed gap" verdict is unaffected by this fix. The shared
+partner-channel artifact/report needs the same correction (Huutokaupat.com's original "checked
+directly against the live API, rules out a sync gap" claim predates this discovery).
 
 ---
 
@@ -473,13 +490,80 @@ date range `2025-01-01` to `2026-08-03` across all three. Workflow id `j4gatZqXa
 - [ ] **Blocked on Backoffice team:** confirm `backfill_route_gsi2pk.py` has run in production
       (needed to confirm `/route` fix — this is the same `/route` Lambda issue tracked in
       `project-architecture.md`'s history)
-- [ ] **Blocked on product:** unscheduled orders count toward reported gigs/revenue? Slack question
-      sent, awaiting answer
-- [ ] If approved: add `includeUnscheduled=true` to all Fetch Orders nodes + backfill the
-      historical unscheduled-order gap (63 in July 2026, 28 in June 2026)
+- [x] **Fixed 2026-08-08:** unscheduled orders were entirely missing from Supabase (not a
+      product-decision question — they're real, paid gigs; product owner confirmed via Slack
+      after a daily-report count mismatch surfaced it). `includeUnscheduled=true` added to
+      the `Fetch Orders` node in `orders-hot/warm/cool.json` + `backfill.json`; historical
+      gap backfilled via `scripts/backfill_unscheduled_orders.py`. See `CHANGELOG.md` and
+      `docs/GOTCHAS.md` for the full root-cause writeup.
 - [ ] Update `docs/BACKOFFICE_API_ISSUES.md` with live re-verification: #9 (AVY) confirmed fixed,
       #6 (param validation) confirmed shipped, #13 (same-day lag) confirmed/explained,
       #2/#4 (decimal-cents) confirmed **still broken** despite docs claiming otherwise
+
+### E. Payments sync (Stripe + Paytrail)
+
+Requested by apukuski-bi-chatbot (Bertta) — real payment data for upsell-discount tracking,
+cost/margin ("kate") reporting, the MVIR1 investor report, and orders reconciliation. Full
+spec and rationale: the original task message, not duplicated here.
+
+- [x] **Paytrail — live and shipping 2026-08-12.** `payments_paytrail` table
+      (`supabase/migrations/008_create_payments_tables.sql`). Sync is **event-driven**, not
+      polled — confirmed live that Paytrail has no list/date-range API (two guessed report
+      endpoints both 404'd; the architecture here is create-payment + webhook-callback
+      only). Extended the existing "Paytrail Payment Callback Tracking" workflow
+      (`iXwwwZyEkD1ZsrYA`, not owned by this repo — see `N8N_WORKFLOW_IDS.md`) with 3 new
+      `Payments: *` nodes in a parallel branch, `continueOnFail: true` on each so a bug here
+      can't break the existing customer-facing receipt/email/order-creation flow.
+      `order_id` resolution confirmed non-trivial: Paytrail's `reference` field is a real
+      `order_id` UUID for direct settlement payments, but a short Airtable `OfferID` for the
+      "schedule later" freight flow — resolved via an Airtable Offers lookup
+      (`OfferID` → `Order Link` field → embedded `order_id`) when `reference` isn't already
+      a UUID; `null` when it can't be resolved, not guessed.
+      **Not backfilled** — no historical transaction list exists to backfill from; data
+      starts accumulating from 2026-08-12 forward. Fee/refund columns exist in the schema
+      but are always null — no confirmed Paytrail endpoint returns them yet.
+      **Not yet verified against a real live payment** — couldn't safely fire a synthetic
+      test against this production webhook (real side effects: customer emails, PDF
+      receipts, order creation). Will confirm on the next real Paytrail payment; check
+      `payments_paytrail` / `sync_log` (`workflow = 'Paytrail Payment Callback Tracking
+      (payments sync)'`) for a row after that.
+- [x] **Stripe — live and shipping 2026-08-12.** Restricted read-only key provided (Checkout
+      Sessions + Payment Intents + Charges/Refunds, read-only). Unlike Paytrail, Stripe has a
+      real paginated list endpoint (`GET /v1/checkout/sessions`, `created[gte]` date filter),
+      so this follows the standard periodic-pull pattern — new workflow
+      `payments-stripe-daily` (`yNqzuzXmwPswa3Lk`), daily 05:30 Helsinki, rolling 30-day
+      window. Confirmed live: `metadata.order_id` on checkout sessions is a direct, reliable
+      `order_id` UUID — no Airtable indirection needed, unlike Paytrail. A single nested
+      `expand[]=data.payment_intent.latest_charge.balance_transaction` call gets fee
+      (`balance_transaction.fee`) and refund (`charge.amount_refunded`) data in the same
+      request — Stripe actually has this data, unlike Paytrail. Verified end-to-end: 322 rows
+      landed with real `order_id`s and fee data. No historical backfill script yet — the
+      30-day rolling window covers what exists so far; add one if data older than 30 days
+      before 2026-08-12 is ever needed.
+- [x] **Real production incident during Stripe build, 2026-08-12 — caused by this work, not
+      unrelated infra.** `payments-stripe-daily`'s Upsert node lacked `executeOnce: true`,
+      causing ~90+ near-simultaneous duplicate full-array upserts (n8n HTTP Request nodes run
+      once per input item by default; `$input.all()` in the body doesn't change that). Real
+      Postgres lock contention cascaded into a full Supabase outage (Database/PostgREST/Auth/
+      Storage unhealthy, Cloudflare 522s) confirmed via Supabase's own logs (`ShareLock`
+      waits, `canceling statement due to statement timeout`) — initially misdiagnosed as an
+      unrelated Supabase-side event before the logs were checked; corrected once they were.
+      Same bug found latent (but not yet triggered) in `ads-google-daily`, `ads-meta-daily`,
+      `analytics-ga-daily` — present since 2026-08-06, just at lower volume. All 4 fixed and
+      verified same day (single clean re-test after Supabase recovered: 33s execution, one
+      `sync_log` row, no duplicates). `orders-hot/warm/cool.json`/`backfill.json` were already
+      correctly protected. See `docs/GOTCHAS.md` for the full mechanism writeup.
+- [ ] Minor, **systemic not Stripe-specific**: `sync_log.started_at` is `null` on every row
+      from every workflow using the `$execution.startedAt` expression — confirmed this isn't
+      new, `ads-google-daily`'s rows have had it since 2026-08-06 too. Doesn't affect data
+      integrity (`completed_at`/`rows_upserted`/`status` are all correct), but worth a real
+      fix (capture start time explicitly in each workflow's first node instead) next time
+      any of these are touched — not fixed today, low priority relative to the outage above.
+- [x] Found while investigating: Paytrail merchant credentials are hardcoded in a live N8N
+      Code node, not a credential — see workstream D below, left as-is per Jussi.
+- [ ] `apukuski-bi-chatbot`'s `app/funnel.py::fetch_stripe_upsell` should migrate to reading
+      `payments_stripe` from Supabase once that's live, same as other funnel stages — that
+      change happens in the other repo, not here.
 
 ### D. Deferred security fix
 - [ ] Hardcoded Backoffice API key committed in workflow JSON + `scripts/reconcile_airtable_financials.py`
@@ -489,6 +573,13 @@ date range `2025-01-01` to `2026-08-03` across all three. Workflow id `j4gatZqXa
       hardcodes the same Backoffice key — found while using it as a reference for the new
       marketing backfill scripts. Same fix needs to cover this file too, not just the two
       originally named.
+- [ ] **Found 2026-08-12, different system:** live Paytrail merchant ID + secret key are
+      hardcoded as string literals inside a Code node in N8N workflow `2agZke6LRg65dcq9`
+      ("Paytrail laskun luonti"), not stored as an N8N credential. Found while investigating
+      Paytrail for the payments-sync build (workstream E). Deliberately left as-is per Jussi
+      — it's a live payment-critical workflow, changing its auth mechanism carries real risk
+      and was out of scope for a sync-pipeline task. Flagging for whenever security work is
+      prioritized, same bucket as the Backoffice key above.
 
 ---
 

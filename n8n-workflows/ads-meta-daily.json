@@ -9,7 +9,10 @@
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
-      "position": [240, 300],
+      "position": [
+        240,
+        300
+      ],
       "parameters": {
         "rule": {
           "interval": [
@@ -26,7 +29,10 @@
       "name": "Fetch Meta Ads Data",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [460, 300],
+      "position": [
+        460,
+        300
+      ],
       "parameters": {
         "method": "POST",
         "url": "https://api.supermetrics.com/enterprise/v2/query/data/keyjson",
@@ -55,7 +61,10 @@
       "name": "Transform Meta Ads",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [680, 300],
+      "position": [
+        680,
+        300
+      ],
       "parameters": {
         "jsCode": "// NOTE: same assumption as ads-google-daily.json — /keyjson returns a bare array of\n// row objects, auto-split by n8n into one item per row. Verify item count against the\n// Hub preview's row count on first real run.\n\nconst results = [];\n\nfor (const item of $input.all()) {\n  const d = item.json;\n\n  const transformed = {\n    date: d.Date,\n    campaign_id: d.adcampaign_id,\n    campaign_name: d.adcampaign_name || null,\n    placement: d.placement,\n    impressions: d.impressions != null ? Number(d.impressions) : null,\n    cost_eur: d.cost_eur != null ? Number(d.cost_eur) : null,\n    link_clicks: d.unique_action_link_click != null ? Number(d.unique_action_link_click) : null,\n    website_conversions: d.offsite_conversions != null ? Number(d.offsite_conversions) : null,\n    website_conversion_value: d.offsite_conversion_value != null ? Number(d.offsite_conversion_value) : null,\n    website_purchases: d.offsite_conversions_fb_pixel_purchase != null ? Number(d.offsite_conversions_fb_pixel_purchase) : null,\n    synced_at: new Date().toISOString()\n  };\n\n  if (transformed.date && transformed.campaign_id && transformed.placement) {\n    results.push({ json: transformed });\n  }\n}\n\nreturn results;"
       }
@@ -65,7 +74,10 @@
       "name": "Upsert Meta Ads",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [900, 300],
+      "position": [
+        900,
+        300
+      ],
       "parameters": {
         "method": "POST",
         "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/ads_meta_placement_daily",
@@ -94,14 +106,18 @@
         "specifyBody": "json",
         "jsonBody": "={{ $input.all().map(i => i.json) }}",
         "options": {}
-      }
+      },
+      "executeOnce": true
     },
     {
       "id": "aaaaaaaa-0010-0010-0010-000000000005",
       "name": "Log Sync",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1120, 300],
+      "position": [
+        1120,
+        300
+      ],
       "parameters": {
         "method": "POST",
         "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/sync_log",
@@ -137,7 +153,10 @@
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [240, 480],
+      "position": [
+        240,
+        480
+      ],
       "parameters": {
         "httpMethod": "POST",
         "path": "ads-meta-daily",
@@ -149,19 +168,59 @@
   ],
   "connections": {
     "Schedule Trigger": {
-      "main": [[{ "node": "Fetch Meta Ads Data", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Fetch Meta Ads Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Fetch Meta Ads Data": {
-      "main": [[{ "node": "Transform Meta Ads", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Transform Meta Ads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Transform Meta Ads": {
-      "main": [[{ "node": "Upsert Meta Ads", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Upsert Meta Ads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Upsert Meta Ads": {
-      "main": [[{ "node": "Log Sync", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Log Sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Webhook Trigger": {
-      "main": [[{ "node": "Fetch Meta Ads Data", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Fetch Meta Ads Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   }
 }

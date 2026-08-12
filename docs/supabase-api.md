@@ -137,6 +137,49 @@ Reference data. Updated weekly.
 | `tz` | text | Timezone string (e.g. `Europe/Helsinki`) |
 | `synced_at` | timestamptz | Last sync time |
 
+### `payments_paytrail`
+
+One row per Paytrail payment. Written **event-driven** by the existing "Paytrail Payment
+Callback Tracking" N8N workflow (not owned by this repo — see `N8N_WORKFLOW_IDS.md`) as
+payments complete, not on a schedule — there's no Paytrail list/date-range API to poll.
+
+| Column | Type | Description |
+|---|---|---|
+| `transaction_id` | text | Primary key — Paytrail's transaction UUID |
+| `reference` | text | Raw Paytrail `reference` field — **not reliably `order_id`**, see below |
+| `stamp` | text | Paytrail's unique payment-attempt stamp |
+| `order_id` | text | Resolved Backoffice order_id, may be `null` — see below |
+| `status` | text | Paytrail status (e.g. `ok`) |
+| `amount_cents` | integer | Payment amount in cents |
+| `currency` | text | e.g. `EUR` |
+| `provider` | text | Paying bank/method, e.g. `osuuspankki` |
+| `created_at` | timestamptz | When the payment was created at Paytrail |
+| `paid_at` | timestamptz | When it was completed |
+| `fee_cents` | integer | **Always null currently** — not returned by any confirmed Paytrail endpoint |
+| `refund_amount_cents` | integer | **Always null currently** — same reason |
+| `filing_code` | text | Paytrail filing/accounting code |
+| `settlement_reference` | text | Paytrail settlement batch reference |
+| `raw_payload` | jsonb | Full `GET /payments/{id}` response (PII-stripped — no customer object) |
+| `synced_at` | timestamptz | When this row was written |
+
+**`order_id` resolution — important, don't assume `reference = order_id`.** Confirmed live
+2026-08-12: Paytrail's `reference` field means different things depending on which flow
+created the payment. Direct order-settlement payments set it to the real `order_id` UUID.
+The "schedule later" freight/offer flow (Airtable Offers → Paytrail → Backoffice
+`/order/import`, only *after* payment) sets it to a short Airtable `OfferID` instead (e.g.
+`"94694"`) — not a `order_id` at all. The sync resolves this: if `reference` looks like a
+UUID, it's used directly; otherwise it's looked up in Airtable Offers by `OfferID` and the
+real `order_id` extracted from that record's `Order Link` field, when present. `order_id`
+is `null` when an offer never converted to a real order, or the lookup found nothing — left
+null rather than guessed, same discipline as `pickup_city`/`delivery_city` in migration 007.
+
+### `payments_stripe`
+
+Schema exists (`supabase/migrations/008_create_payments_tables.sql`) but **not yet synced**
+— blocked on a live `STRIPE_API_KEY` to confirm the real payload shape and the
+`orders.order_id` join key before committing to a sync design, same rigor applied to
+Paytrail above. See `docs/STATUS.md` workstream E.
+
 ### `sync_log`
 
 Audit trail of every N8N sync run.
@@ -274,14 +317,20 @@ for o in orders:
   - Days 4–14: refreshed every 6 hours
   - Days 15–45: refreshed daily at 03:30
   - Hubs: refreshed weekly Monday 02:00
+  - `payments_paytrail`: **event-driven, real-time** — written as each payment completes,
+    not on a schedule (no polling API exists to poll on one)
+  - `payments_stripe`: not yet live
 - **Row count:** ~11,000 orders, 99 hubs as of 29 July 2026.
 - **No end-customer name on platform orders.** `/order` rows have no customer field at
   all (0 of 1,385 sampled) — `organization_name` is the hub/partner, not the customer.
   Only manual orders carry customer name/email/phone. Customer-name lookups therefore
   only ever hit manual orders.
-- **Every order has a schedule.** Of 1,900 orders sampled (Apr–Jul 2026) only 1 lacked
-  `first_schedule`, and `schedule` always holds exactly two entries (window start/end).
-  There is no unscheduled or pending state, so "sold but not yet scheduled" gigs do not
-  appear here at all — they live in the Offers layer until a date is set. Far-future
-  bookings are visible: 71 were scheduled 31+ days out, longest 87 days.
+- **Corrected 2026-08-08 — unscheduled orders exist and are now synced.** The "only 1 of
+  1,900 lacked `first_schedule`" finding below was itself a symptom of a since-fixed sync
+  bug: `/order` silently omits orders without a schedule unless `includeUnscheduled=true`
+  is passed. 205 historical unscheduled orders (offer/"schedule later" freight gigs) have
+  been backfilled; `first_schedule IS NULL` is a normal, expected state going forward, not
+  a data-quality flag. See `docs/GOTCHAS.md` and `CHANGELOG.md` v1.1.0. (Original note,
+  now outdated, kept for history: "Of 1,900 orders sampled (Apr–Jul 2026) only 1 lacked
+  `first_schedule`... no unscheduled or pending state.")
 - Full manual-order charge decision history: `data/AWS_API_charge_object_bug_report.md`.

@@ -1,6 +1,6 @@
 # N8N Workflow IDs
 
-Last verified: 2026-08-06
+Last verified: 2026-08-12
 
 ## Sync Workflows
 
@@ -15,6 +15,23 @@ Last verified: 2026-08-06
 | Ads Google Daily Sync (last 30 days) | CZbzvcmagNxvC1JN | Daily 05:00 | Active |
 | Ads Meta Daily Sync (last 30 days) | vuQOMC0tnTaZkMTC | Daily 05:00 | Active |
 | Analytics GA Daily Sync | j4gatZqXaw9tk55x | Daily 06:00 | Active |
+
+## Payments Sync Workflows
+
+Event-driven, not scheduled — see `docs/STATUS.md` workstream E for why (Paytrail has no
+list/date-range API; only create-payment + webhook-callback).
+
+| Workflow | ID | Trigger | Status |
+|---|---|---|---|
+| Paytrail Payment Callback Tracking | iXwwwZyEkD1ZsrYA | Webhook (Paytrail callback) | Active |
+
+**Not owned by `api_data_parser`** — this workflow belongs to the offer/booking automation
+(PDF receipts, emails, order creation via `/order/import`). We only added the 3
+`Payments: *` nodes (a parallel branch off `Code in JavaScript1`, `continueOnFail: true` on
+each so a bug there can't break the existing customer-facing flow) that write to
+`payments_paytrail`. Tracked here as `n8n-workflows/paytrail-payment-callback-tracking.json`
+because it now also feeds this repo's Supabase tables — don't assume ownership of the rest
+of the workflow when editing.
 
 ## Monitoring Workflows
 

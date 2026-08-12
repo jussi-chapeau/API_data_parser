@@ -49,6 +49,38 @@ backend aligns rates.
 **N8N date filter is on order creation, not execution.** Sync windows (`start_date` /
 `end_date`) filter when the order was created, not `Toteutuspäivä` / `first_schedule`.
 
+**`/order` silently omits unscheduled orders unless `includeUnscheduled=true` is passed.**
+Offer/"schedule later" freight gigs (no `firstSchedule` yet, but real and paid — confirmed
+via Paytrail) never appeared in any sync, at any date range, going back to project start.
+Found 2026-08-08 after a daily gig-count mismatch (10 synced vs. 14 real for 2026-08-07).
+Verified live: baseline vs. `includeUnscheduled=true` diff over 45 days found 96 hidden
+orders, all with `firstSchedule: null`; other guessed param names all 400'd, so this one is
+real and specific. Fixed in `orders-hot/warm/cool.json` + `backfill.json`; historical gap
+backfilled via `scripts/backfill_unscheduled_orders.py`. Also partly explains
+`docs/BACKOFFICE_API_ISSUES.md` #15's Huutokaupat.com "confirmed gap" — 9 of the 96 hidden
+orders were Huutokaupat.com-tagged. Manual orders don't need this: `/manual-order` 400s if
+you pass it.
+
+**`$input.all().map()` in an HTTP Request node's body still runs once per item unless
+`executeOnce: true` is set on the node — and each run re-sends the full array.** N8N HTTP
+Request nodes execute once per input item by default; `$input.all()` inside the body
+expression doesn't change that, it just means every one of those per-item executions
+independently re-evaluates to the *same full array* and re-sends it. Caused a real
+production incident 2026-08-12: `payments-stripe-daily`'s Upsert node (322 checkout
+sessions, no `executeOnce`) fired ~90+ near-simultaneous duplicate full-array POSTs to
+`payments_stripe` within a 30ms window, causing real Postgres lock contention
+(`ShareLock` waits, `canceling statement due to statement timeout` in Supabase's own logs)
+that cascaded into a full outage — Database/PostgREST/Auth/Storage all went unhealthy
+(Cloudflare 522s), Realtime/Edge Functions stayed up since they don't depend on the same
+synchronous Postgres path. `orders-hot/warm/cool.json` and `backfill.json` already had
+`executeOnce: true` on their Upsert nodes from an earlier lesson — but it didn't carry
+forward when the marketing-sync workflows were built 2026-08-06, so `ads-google-daily`,
+`ads-meta-daily`, and `analytics-ga-daily` had been running the identical bug daily,
+just at low enough volume to not visibly break anything until Stripe's larger batch hit
+it. All 4 fixed same day. **Check `executeOnce: true` is set on every future Upsert/batch
+node that uses `$input.all()` in its body — this is not optional, it's the difference
+between one request and N duplicate ones.**
+
 **Monitoring workflows share credentials with what they monitor — and had two more
 independent bugs on top of that.** A Supabase key rotation (2026-08) silently broke every
 workflow writing to Supabase, ~2 days of missing order/route/hub data, zero alerts. Three

@@ -300,14 +300,31 @@ they are excluded from state tracking.
 
 ### 12. No unscheduled state; `/customer` has no pagination
 
-**Scheduling** — of 1,900 orders sampled, only 1 lacks `firstSchedule`, and
-`schedule` always holds exactly two entries. There is no pending/unscheduled
-state, so a gig sold before a delivery date is agreed does not appear in the API
-at all. We could not verify two sold gigs (1.6.2026 and 5.7.2026) for this reason.
-Please confirm whether such orders exist upstream and how to retrieve them.
+**RESOLVED 2026-08-08 (scheduling half)** — confirmed via live probe: `/order`
+supports `includeUnscheduled=true`, undocumented but real (verified by diffing
+baseline vs. param responses for the same day — the param adds rows, never
+removes them, and every added row has `firstSchedule: null`). Without it,
+`/order` silently omits orders that haven't been scheduled yet (offer/"schedule
+later" freight gigs, confirmed paid via Paytrail). Root-caused via a live
+production incident: Supabase's daily gig count for 2026-08-07 was 10 vs. 14
+real (Airtable) — traced to exactly this gap. A 45-day live-API diff
+(2026-06-24–2026-08-07) found **96 hidden orders**, all `firstSchedule: null`.
+Fixed 2026-08-08: `includeUnscheduled=true` added to the `Fetch Orders` node in
+all order-sync workflows (`orders-hot/warm/cool`, `backfill`); historical gap
+backfilled via `scripts/backfill_unscheduled_orders.py`. See `CHANGELOG.md` and
+`docs/GOTCHAS.md`.
 
-**Pagination** — `/customer` returns all 5,681 records (1.1 MB) in one response
-with no `limit`/`offset` and no date filtering. This will not scale.
+This also **partially explains issue #15** (Tokmanni/Rusta/Huutokaupat.com) —
+see the correction note there. Still open: please confirm `includeUnscheduled`
+is the intended/stable way to retrieve these, since it's undocumented — other
+guessed parameter names (`unscheduled`, `scheduled=false`, `orderState=UNSCHEDULED`,
+etc.) all returned `400`, so this isn't a general "any param works" case, `includeUnscheduled`
+specifically is real. Originally: "of 1,900 orders sampled, only 1 lacks
+`firstSchedule`" — that finding was itself a symptom of this same default-omission
+behavior, not evidence unscheduled orders don't exist upstream.
+
+**Pagination (still open)** — `/customer` returns all 5,681 records (1.1 MB) in
+one response with no `limit`/`offset` and no date filtering. This will not scale.
 
 ---
 
@@ -392,6 +409,23 @@ the three confirmed gaps. **This rules out a sync gap**: our pipeline
 faithfully mirrors what the API returns; the absence is at the source, not
 lost in transit.
 
+**Correction 2026-08-08** — that live-API check predates the discovery of
+`includeUnscheduled=true` (see issue #12): `/order` silently omits orders
+without a `firstSchedule` unless that parameter is passed, so the 45-day check
+above missed anything still unscheduled. Re-ran the same 45-day window with
+`includeUnscheduled=true` and diffed against the baseline (unscheduled-only)
+response: **Tokmanni and Rusta still show zero matches in the previously-hidden
+set — their "confirmed gap" verdict is unchanged.** Huutokaupat.com is
+different: **9 of the 96 orders hidden by the sync-gap bug are
+Huutokaupat.com-tagged** (`content.title.category` = `"huutokaupat.com"`,
+confirmed on real order records, e.g. two of the four orders missing from the
+2026-08-07 daily report). That sync gap is now fixed (see issue #12) and the
+historical gap backfilled, so these orders now exist in Supabase. This does
+**not** change the core finding below — synced Huutokaupat.com orders still
+have no `origin` tag — it only means the "zero" count for Huutokaupat.com was
+partly a sync-gap artifact, not purely a tagging gap. Tokmanni/Rusta remain
+fully unexplained by any known sync issue.
+
 **Impact** — if these three partnerships are live and orders are actually
 flowing through them, that volume is currently indistinguishable from
 ordinary untagged `app` orders in every downstream system (Supabase,
@@ -422,7 +456,7 @@ live, an ETA would help us know when this becomes measurable.
 | 9 | `origin` sparse, `AVY#{id}` literal | P3 | Fix interpolation, backfill, document values |
 | 10 | `hubId`/`orgId` null on platform | P3 | Populate both |
 | 11 | Manual orders never `DELIVERED` | P3 | Unify lifecycle or document |
-| 12 | No unscheduled state; no pagination | P3 | Clarify; add `limit`/`offset` |
+| 12 | No unscheduled state (**fixed client-side 2026-08-08** via `includeUnscheduled=true`); `/customer` no pagination | P1 → P3 (pagination only) | Confirm `includeUnscheduled` is stable/documented; add `limit`/`offset` |
 | 13 | Possible same-day indexing lag | P3 | Confirm and document |
 | 14 | `/manual-order` record with no `orderId` | P3 | Backfill ID or filter upstream |
 | 15 | Tokmanni/Rusta/Huutokaupat.com partner channels: zero tagged orders | P2 | Confirm integrations are live; explain the gap |

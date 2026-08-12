@@ -1,0 +1,4640 @@
+{
+  "updatedAt": "2026-08-08T06:12:00.544Z",
+  "createdAt": "2026-03-02T19:39:49.909Z",
+  "id": "iXwwwZyEkD1ZsrYA",
+  "name": "Paytrail Payment Callback Tracking",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "path": "39574924-47a4-434f-bdb6-dfb4c2986758",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        4496,
+        416
+      ],
+      "id": "7d52362e-7807-4d98-af51-0ba047d7bcb7",
+      "name": "Webhook",
+      "webhookId": "39574924-47a4-434f-bdb6-dfb4c2986758"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        4272,
+        224
+      ],
+      "id": "bfc0bb9a-68f2-4c1c-a950-7ddfead56ca9",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4720,
+        320
+      ],
+      "id": "0126c49b-5355-4fb3-876a-1ac24e3f89d3",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ec6b939e-2eb2-4112-8763-0731d93884fd",
+              "leftValue": "={{ $json.query['checkout-status'] }}",
+              "rightValue": "ok",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        4944,
+        320
+      ],
+      "id": "bbe2ff80-6bf1-415e-9431-09a4f8fb66a3",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appGkn53DdtjFGmWV",
+          "mode": "list",
+          "cachedResultName": "ApuCenter",
+          "cachedResultUrl": "https://airtable.com/appGkn53DdtjFGmWV"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl20FO42hsfHDESX",
+          "mode": "list",
+          "cachedResultName": "Offers",
+          "cachedResultUrl": "https://airtable.com/appGkn53DdtjFGmWV/tbl20FO42hsfHDESX"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Status": "Maksettu ja hyväksytty",
+            "OfferID": "={{ $json.query['checkout-reference'] }}"
+          },
+          "matchingColumns": [
+            "OfferID"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Row",
+              "displayName": "Row",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "OfferID",
+              "displayName": "OfferID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Palvelutaso",
+              "displayName": "Palvelutaso",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Viimeistään",
+              "displayName": "Viimeistään",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Myyntipäivä",
+              "displayName": "Myyntipäivä",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Request for quotation",
+              "displayName": "Request for quotation",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "In service area",
+              "displayName": "In service area",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "kiertonet.fi",
+                  "value": "kiertonet.fi"
+                },
+                {
+                  "name": "apukuski.com",
+                  "value": "apukuski.com"
+                },
+                {
+                  "name": "WhatsApp",
+                  "value": "WhatsApp"
+                },
+                {
+                  "name": "Rahtiputki",
+                  "value": "Rahtiputki"
+                },
+                {
+                  "name": "turunmuuttopalvelu.fi",
+                  "value": "turunmuuttopalvelu.fi"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "1. säpö",
+                  "value": "1. säpö"
+                },
+                {
+                  "name": "Lisätiedot",
+                  "value": "Lisätiedot"
+                },
+                {
+                  "name": "Tarjous (+txt)",
+                  "value": "Tarjous (+txt)"
+                },
+                {
+                  "name": "Kiinteä tarjous",
+                  "value": "Kiinteä tarjous"
+                },
+                {
+                  "name": "Followup",
+                  "value": "Followup"
+                },
+                {
+                  "name": "Keskustelu avoin",
+                  "value": "Keskustelu avoin"
+                },
+                {
+                  "name": "Varaus & Vahvistus",
+                  "value": "Varaus & Vahvistus"
+                },
+                {
+                  "name": "Muistutus varauksesta",
+                  "value": "Muistutus varauksesta"
+                },
+                {
+                  "name": "Varauksen muokkaaminen",
+                  "value": "Varauksen muokkaaminen"
+                },
+                {
+                  "name": "Hyväksytty",
+                  "value": "Hyväksytty"
+                },
+                {
+                  "name": "Hylätty",
+                  "value": "Hylätty"
+                },
+                {
+                  "name": "Ei voida toteuttaa (hylky + refund)",
+                  "value": "Ei voida toteuttaa (hylky + refund)"
+                },
+                {
+                  "name": "Maksettu ja hyväksytty",
+                  "value": "Maksettu ja hyväksytty"
+                },
+                {
+                  "name": "Varaa suorakuljetus",
+                  "value": "Varaa suorakuljetus"
+                },
+                {
+                  "name": "Reitityksessä",
+                  "value": "Reitityksessä"
+                },
+                {
+                  "name": "Reitityksessä, etsi toinen kyyti",
+                  "value": "Reitityksessä, etsi toinen kyyti"
+                },
+                {
+                  "name": "Nouto varattu",
+                  "value": "Nouto varattu"
+                },
+                {
+                  "name": "Varattu",
+                  "value": "Varattu"
+                },
+                {
+                  "name": "Aikataulutus",
+                  "value": "Aikataulutus"
+                },
+                {
+                  "name": "VARAA POSTI RAHTI",
+                  "value": "VARAA POSTI RAHTI"
+                },
+                {
+                  "name": "POIKKEAMA",
+                  "value": "POIKKEAMA"
+                },
+                {
+                  "name": "Hyväksytty (tuntihinta)",
+                  "value": "Hyväksytty (tuntihinta)"
+                },
+                {
+                  "name": "Asiakas ohjattu APP",
+                  "value": "Asiakas ohjattu APP"
+                },
+                {
+                  "name": "",
+                  "value": ""
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "HOX!!",
+              "displayName": "HOX!!",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Tarjouslinkki",
+              "displayName": "Tarjouslinkki",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Team Notes",
+              "displayName": "Team Notes",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Toivottu päivämäärä",
+              "displayName": "Toivottu päivämäärä",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Service",
+              "displayName": "Service",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Bundle Price (VAT incl.)",
+              "displayName": "Bundle Price (VAT incl.)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Bundle Price (VAT 0)",
+              "displayName": "Bundle Price (VAT 0)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Tax 25,5% (Bundle)",
+              "displayName": "Tax 25,5% (Bundle)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Total Price (VAT incl.)",
+              "displayName": "Total Price (VAT incl.)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Goods to be transported",
+              "displayName": "Goods to be transported",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Total Price (VAT 0)",
+              "displayName": "Total Price (VAT 0)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Tax 25,5%",
+              "displayName": "Tax 25,5%",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Company ID",
+              "displayName": "Company ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Address (Pickup)",
+              "displayName": "Address (Pickup)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Apartment (Pickup)",
+              "displayName": "Apartment (Pickup)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Postcode (Pickup)",
+              "displayName": "Postcode (Pickup)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Size_m2 (Pickup)",
+              "displayName": "Size_m2 (Pickup)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Floor (Pickup)",
+              "displayName": "Floor (Pickup)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "lat (Pickup)",
+              "displayName": "lat (Pickup)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "lon (Pickup)",
+              "displayName": "lon (Pickup)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Elevator (Pickup)",
+              "displayName": "Elevator (Pickup)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Carrying (Pickup)",
+              "displayName": "Carrying (Pickup)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Info (Pickup)",
+              "displayName": "Info (Pickup)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Contact name (Pickup)",
+              "displayName": "Contact name (Pickup)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Phone (Pickup)",
+              "displayName": "Phone (Pickup)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Address (Delivery)",
+              "displayName": "Address (Delivery)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Apartment (Delivery)",
+              "displayName": "Apartment (Delivery)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Postcode (Delivery)",
+              "displayName": "Postcode (Delivery)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Size_m2 (Delivery)",
+              "displayName": "Size_m2 (Delivery)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Floor (Delivery)",
+              "displayName": "Floor (Delivery)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Elevator (Delivery)",
+              "displayName": "Elevator (Delivery)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Carrying (Delivery)",
+              "displayName": "Carrying (Delivery)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Info (Delivery)",
+              "displayName": "Info (Delivery)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Contact name (Delivery)",
+              "displayName": "Contact name (Delivery)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Phone (Delivery)",
+              "displayName": "Phone (Delivery)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "lat (Delivery)",
+              "displayName": "lat (Delivery)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "lon (Delivery)",
+              "displayName": "lon (Delivery)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Distance (km)",
+              "displayName": "Distance (km)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "itemsAccurate",
+              "displayName": "itemsAccurate",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Product page (URL)",
+              "displayName": "Product page (URL)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Picture",
+              "displayName": "Picture",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Last Mile Cost (VAT inlc.)",
+              "displayName": "Last Mile Cost (VAT inlc.)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Order Link",
+              "displayName": "Order Link",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "€/h",
+              "displayName": "€/h",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "€/h, Arvio keikan hinnasta copy",
+              "displayName": "€/h, Arvio keikan hinnasta copy",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "€/h, Hintahaitari",
+              "displayName": "€/h, Hintahaitari",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Tuntihinta",
+              "displayName": "Tuntihinta",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Perustelu",
+              "displayName": "Perustelu",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Kuljetusalusta",
+              "displayName": "Kuljetusalusta",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Loose parcel",
+                  "value": "Loose parcel"
+                },
+                {
+                  "name": "Half pallet",
+                  "value": "Half pallet"
+                },
+                {
+                  "name": "Roll cage",
+                  "value": "Roll cage"
+                },
+                {
+                  "name": "EUR-pallet",
+                  "value": "EUR-pallet"
+                },
+                {
+                  "name": "FIN-pallet",
+                  "value": "FIN-pallet"
+                },
+                {
+                  "name": "Furniture pallet",
+                  "value": "Furniture pallet"
+                },
+                {
+                  "name": "FREIGHT NOT POSSIBLE",
+                  "value": "FREIGHT NOT POSSIBLE"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Load Carrier Cost (VAT inlc.)",
+              "displayName": "Load Carrier Cost (VAT inlc.)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Packing Price (VAT inlc.)",
+              "displayName": "Packing Price (VAT inlc.)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Terminaali",
+              "displayName": "Terminaali",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "lat (Terminal)",
+              "displayName": "lat (Terminal)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "lon (Terminal)",
+              "displayName": "lon (Terminal)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Kuljetusvyöhyke",
+              "displayName": "Kuljetusvyöhyke",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Jakeluvyöhyke",
+              "displayName": "Jakeluvyöhyke",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Rahdin hinta (sis alv 25,5%)",
+              "displayName": "Rahdin hinta (sis alv 25,5%)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Jätemaksu (sis alv 25.5%)",
+              "displayName": "Jätemaksu (sis alv 25.5%)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Payment link",
+              "displayName": "Payment link",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Payment Method",
+              "displayName": "Payment Method",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Verkkomaksu",
+                  "value": "Verkkomaksu"
+                },
+                {
+                  "name": "Verkkolasku",
+                  "value": "Verkkolasku"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Verkkolaskuosoite",
+              "displayName": "Verkkolaskuosoite",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Operaattoritunnus",
+              "displayName": "Operaattoritunnus",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Payment Receipt",
+              "displayName": "Payment Receipt",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Last Modified",
+              "displayName": "Last Modified",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Address (Warehouse)",
+              "displayName": "Address (Warehouse)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Floor (Warehouse)",
+              "displayName": "Floor (Warehouse)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Elevator (Warehouse)",
+              "displayName": "Elevator (Warehouse)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Carrying (Warehouse)",
+              "displayName": "Carrying (Warehouse)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "lat (Warehouse)",
+              "displayName": "lat (Warehouse)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "lon (Warehouse)",
+              "displayName": "lon (Warehouse)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "OrderId",
+              "displayName": "OrderId",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Proposed Pickup Window",
+              "displayName": "Proposed Pickup Window",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Customer Proposal Pickup Window",
+              "displayName": "Customer Proposal Pickup Window",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Confirmed Pickup Window",
+              "displayName": "Confirmed Pickup Window",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Proposed Delivery Window",
+              "displayName": "Proposed Delivery Window",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Customer Proposal Delivery Window",
+              "displayName": "Customer Proposal Delivery Window",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Confirmed Delivery Window",
+              "displayName": "Confirmed Delivery Window",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Schedule inquiry info",
+              "displayName": "Schedule inquiry info",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "gmail_thread_id",
+              "displayName": "gmail_thread_id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "gmail_message_id",
+              "displayName": "gmail_message_id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Aktiviteetin määräpäivä",
+              "displayName": "Aktiviteetin määräpäivä",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Aktiviteetti",
+              "displayName": "Aktiviteetti",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Aktiviteetin kuvaus",
+              "displayName": "Aktiviteetin kuvaus",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Maksettu?",
+              "displayName": "Maksettu?",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        5168,
+        320
+      ],
+      "id": "041ac95b-1b1d-4ade-846c-5e22037c32e7",
+      "name": "Update record in Offers",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "NuIpe8hOcHLb3eZj",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "value": "appGkn53DdtjFGmWV",
+          "mode": "list",
+          "cachedResultName": "ApuCenter",
+          "cachedResultUrl": "https://airtable.com/appGkn53DdtjFGmWV"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl20FO42hsfHDESX",
+          "mode": "list",
+          "cachedResultName": "Offers",
+          "cachedResultUrl": "https://airtable.com/appGkn53DdtjFGmWV/tbl20FO42hsfHDESX"
+        },
+        "id": "={{ $json.id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        5392,
+        320
+      ],
+      "id": "3cc987c0-86ad-4221-890e-c8a2c4187bfa",
+      "name": "Get a Record by ID",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "NuIpe8hOcHLb3eZj",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.Palvelutaso }}",
+                    "rightValue": "budget",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "b81f9866-a66f-4c5e-979c-9aa56deef611"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "budget"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "3c463618-e631-4f43-bbc7-df743a072cbc",
+                    "leftValue": "={{ $json.Palvelutaso }}",
+                    "rightValue": "normal",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "normal"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        5616,
+        320
+      ],
+      "id": "e395211a-8cad-4a2a-a4c3-6438886c77a9",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================\n// ARVOT EDELLISISTÄ NODEISTA\n// ============================================\nconst stamp = $('Get a Record by ID').first().json.OfferID;\nconst human_now = new Date().toISOString();\nconst payment_method = $('Code in JavaScript1').first().json.query['checkout-provider'];\nconst buyer_name = $('Get a Record by ID').first().json.Name;\nconst buyer_email = $('Get a Record by ID').first().json.Email;\nconst buyer_phone = $('Get a Record by ID').first().json.Phone;\nconst address_pickup = $('Get a Record by ID').first().json['Address (Pickup)'];\nconst address_delivery = $('Get a Record by ID').first().json['Address (Delivery)'];\nconst subtotal_raw = $('Get a Record by ID').first().json['Total Price (VAT 0)'];\nconst vat_raw = $('Get a Record by ID').first().json['Tax 25,5%'];\nconst total_raw = $('Get a Record by ID').first().json['Total Price (VAT incl.)'];\nconst item_name = 'Kuljetus';\nconst item_qty = 1;\nconst item_unit_price = $('Get a Record by ID').first().json['Total Price (VAT 0)'];\nconst item_vat = $('Get a Record by ID').first().json['Tax 25,5%'];\nconst item_total = $('Get a Record by ID').first().json['Total Price (VAT incl.)'];\n\n// ============================================\n// APUFUNKTIOT – ÄLÄ MUOKKAA\n// ============================================\nconst esc = (s) => String(s ?? \"\").replace(/[&<>\"']/g, m =>\n  ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[m])\n);\n\nconst toNumber = (v) => {\n  const s = String(v ?? \"\").replace(\",\", \".\").replace(/[^\\d.-]/g, \"\");\n  const n = parseFloat(s);\n  return Number.isFinite(n) ? n : 0;\n};\n\nconst euro2 = (v) => `${toNumber(v).toFixed(2)} €`;\n\nconst fmtDate = (v) => {\n  try {\n    const d = new Date(v);\n    if (!isNaN(d.getTime())) {\n      const dd = String(d.getDate()).padStart(2, \"0\");\n      const mm = String(d.getMonth() + 1).padStart(2, \"0\");\n      const yyyy = d.getFullYear();\n      return `${dd}.${mm}.${yyyy}`;\n    }\n  } catch {}\n  const s = String(v ?? \"\").split(\" \")[0];\n  return s.replace(/\\//g, \".\").replace(/-/g, \".\");\n};\n\n// ============================================\n// MUOTOILUT\n// ============================================\nconst ISSUE_DATE_FMT = fmtDate(human_now);\nconst PAID_AT_FMT = fmtDate(human_now);\nconst RECEIPT_NUMBER = String(stamp ?? \"\");\nconst PAYMENT_METHOD = String(payment_method ?? \"\");\nconst CUSTOMER_NAME = String(buyer_name ?? \"\");\nconst CUSTOMER_EMAIL = String(buyer_email ?? \"\");\nconst CUSTOMER_PHONE = String(buyer_phone ?? \"\");\nconst ADDRESS_PICKUP = String(address_pickup ?? \"\");\nconst ADDRESS_DELIVERY = String(address_delivery ?? \"\");\nconst SUBTOTAL_EUR = euro2(subtotal_raw);\nconst VAT_EUR = euro2(vat_raw);\nconst TOTAL_EUR = euro2(total_raw);\n\n// ============================================\n// TUOTERIVIT\n// ============================================\nconst rows = `\n    <tr>\n      <td class=\"t-left\">${esc(item_name)}</td>\n      <td class=\"t-right\">${esc(item_qty)}</td>\n      <td class=\"t-right\">${euro2(item_unit_price)}</td>\n      <td class=\"t-right\">${euro2(item_vat)}</td>\n      <td class=\"t-right\">${euro2(item_total)}</td>\n    </tr>`;\n\n// ============================================\n// HTML\n// ============================================\nconst html = `<!doctype html>\n<html lang=\"fi\">\n<head>\n<meta charset=\"utf-8\">\n<title>Kuitti</title>\n<style>\n  @page { size: A4; margin: 12mm; }\n  html, body { height: auto; }\n  body { margin:0; background:#fff; color:#111827; font-family:Arial,Helvetica,sans-serif; font-size:12.5px; line-height:1.45; }\n  .wrap { max-width:185mm; margin:0 auto; }\n  .header { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; padding:6px 0 14px; border-bottom:2px solid #efefef; }\n  .brand { font-size:24px; font-weight:800; color:#de242d; }\n  .doc-meta { text-align:right; font-size:12px; }\n  .doc-meta b { color:#0f172a; }\n  .paid-badge { display:inline-block; margin-top:6px; padding:4px 10px; background:#de242d; color:#fff; font-weight:700; border-radius:6px; font-size:12px; }\n  h1 { margin:14px 0 10px; font-size:18px; color:#0f172a; }\n  h2 { margin:14px 0 6px; font-size:14px; color:#0f172a; }\n  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:6px; }\n  .card { border:1px solid #edeff2; border-radius:10px; padding:12px; background:#fff; }\n  table { width:100%; border-collapse:collapse; }\n  .items { margin-top:14px; border:1px solid #edeff2; border-radius:10px; overflow:hidden; table-layout: fixed; }\n  .items col.col-name { width: 46%; }\n  .items col.col-qty  { width: 12%; }\n  .items col.col-unit { width: 14%; }\n  .items col.col-vat  { width: 14%; }\n  .items col.col-tot  { width: 14%; }\n  .items thead th { background:#f7f7f9; color:#0f172a; font-weight:700; font-size:12px; padding:10px; border-bottom:1px solid #edeff2; }\n  .items thead th.t-left  { text-align:left; }\n  .items thead th.t-right { text-align:right; }\n  .items tbody td { padding:9px 10px; border-bottom:1px solid #f0f2f5; }\n  .items tbody td.t-left  { text-align:left; }\n  .items tbody td.t-right { text-align:right; white-space:nowrap; }\n  .totals { margin-top:10px; display:grid; grid-template-columns:1fr 200px; gap:12px; }\n  .totals .box { border:1px solid #edeff2; border-radius:10px; padding:10px; background:#fff; }\n  .totals td { padding:6px 0; }\n  .totals td:last-child { text-align:right; font-weight:600; }\n  .note { margin-top:10px; font-size:11px; color:#64748b; }\n  .header, .grid-2, .items, .totals, .card { page-break-inside: avoid; }\n</style>\n</head>\n<body>\n  <div class=\"wrap\">\n    <div class=\"header\">\n      <div class=\"brand\">Apukuski</div>\n      <div class=\"doc-meta\">\n        <div><b>KUITTI</b></div>\n        <div>Numero: <b>${esc(RECEIPT_NUMBER)}</b></div>\n        <div>Päivämäärä: <b>${esc(ISSUE_DATE_FMT)}</b></div>\n        <div>Maksettu: <b>${esc(PAID_AT_FMT)}</b></div>\n        <div>Maksutapa: <b>${esc(PAYMENT_METHOD)}</b></div>\n        <div class=\"paid-badge\">Maksettu ✅</div>\n      </div>\n    </div>\n    <h1>Kuitin tiedot</h1>\n    <div class=\"grid-2\">\n      <div class=\"card\">\n        <h2>Myyjä</h2>\n        <div><b>Apukuski Logistics</b></div>\n        <div>Åkerlundinkatu 8</div>\n        <div>33100 Tampere</div>\n        <div>044 774 7744</div>\n        <div>info@apukuski.com</div>\n        <div>Y-tunnus: 3130645-9</div>\n      </div>\n      <div class=\"card\">\n        <h2>Asiakas</h2>\n        <div><b>${esc(CUSTOMER_NAME)}</b></div>\n        <div>${esc(CUSTOMER_EMAIL)}</div>\n        <div>${esc(CUSTOMER_PHONE)}</div>\n      </div>\n    </div>\n    <div class=\"card\" style=\"margin-top:12px;\">\n      <b>Kuljetus:</b> ${esc(ADDRESS_PICKUP)} → ${esc(ADDRESS_DELIVERY)}\n    </div>\n    <table class=\"items\">\n      <colgroup>\n        <col class=\"col-name\" />\n        <col class=\"col-qty\" />\n        <col class=\"col-unit\" />\n        <col class=\"col-vat\" />\n        <col class=\"col-tot\" />\n      </colgroup>\n      <thead>\n        <tr>\n          <th class=\"t-left\">Tuote / Palvelu</th>\n          <th class=\"t-right\">Määrä</th>\n          <th class=\"t-right\">Yks. hinta</th>\n          <th class=\"t-right\">ALV</th>\n          <th class=\"t-right\">Yhteensä</th>\n        </tr>\n      </thead>\n      <tbody>\n        ${rows}\n      </tbody>\n    </table>\n    <div class=\"totals\">\n      <div class=\"box\">\n        <div><b>Lisätiedot</b></div>\n        Kuljetus: ${esc(ADDRESS_PICKUP)} → ${esc(ADDRESS_DELIVERY)}\n      </div>\n      <div class=\"box\">\n        <table>\n          <tr><td>Välisumma</td><td style=\"text-align:right;\">${esc(SUBTOTAL_EUR)}</td></tr>\n          <tr><td>ALV 25,5%</td><td style=\"text-align:right;\">${esc(VAT_EUR)}</td></tr>\n          <tr><td><b>Yhteensä</b></td><td style=\"text-align:right;\"><b>${esc(TOTAL_EUR)}</b></td></tr>\n        </table>\n      </div>\n    </div>\n    <div class=\"note\">\n      Tämä on koneellisesti tuotettu kuitti. Säilytä tositteena kirjanpitoa varten.\n    </div>\n  </div>\n</body>\n</html>`;\n\nreturn [{\n    json: {\n        html: html\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5840,
+        416
+      ],
+      "id": "97ffeb50-0ad7-4f93-88ff-6a74c846050e",
+      "name": "Generate offer HTML (normal)"
+    },
+    {
+      "parameters": {
+        "operation": "URL/HTML to PDF",
+        "convertType": "htmlToPDF",
+        "html": "={{ $json.html }}",
+        "advancedOptions": {}
+      },
+      "type": "n8n-nodes-pdfco.PDFco Api",
+      "typeVersion": 1,
+      "position": [
+        6064,
+        416
+      ],
+      "id": "0f70b77b-420b-4be7-8684-5af4cbf0c4d5",
+      "name": "PDFco Api",
+      "credentials": {
+        "pdfcoApi": {
+          "id": "FcVZXcHXlKANxPAA",
+          "name": "PDF.co account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================\n// ARVOT EDELLISISTÄ NODEISTA\n// ============================================\nconst stamp = $input.first().json.OfferID;\nconst human_now = new Date().toISOString();\nconst payment_method = $('Code in JavaScript1').first().json.query['checkout-provider'];\nconst buyer_name = $('Get a Record by ID').first().json.Name;\nconst buyer_email = $('Get a Record by ID').first().json.Email;\nconst buyer_phone = $('Get a Record by ID').first().json.Phone;\nconst address_pickup = $('Get a Record by ID').first().json['Address (Pickup)'];\nconst address_delivery = $('Get a Record by ID').first().json['Address (Delivery)'];\nconst subtotal_raw = $input.first().json['Bundle Price (VAT 0)'];\nconst vat_raw = $input.first().json['Tax 25,5% (Bundle)'];\nconst total_raw = $input.first().json['Bundle Price (VAT incl.)'];\nconst item_name = 'Kuljetus';\nconst item_qty = 1;\nconst item_unit_price = $input.first().json['Bundle Price (VAT 0)'];\nconst item_vat = $input.first().json['Tax 25,5% (Bundle)'];\nconst item_total = $input.first().json['Bundle Price (VAT incl.)'];\n\n// ============================================\n// APUFUNKTIOT – ÄLÄ MUOKKAA\n// ============================================\nconst esc = (s) => String(s ?? \"\").replace(/[&<>\"']/g, m =>\n  ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[m])\n);\n\nconst toNumber = (v) => {\n  const s = String(v ?? \"\").replace(\",\", \".\").replace(/[^\\d.-]/g, \"\");\n  const n = parseFloat(s);\n  return Number.isFinite(n) ? n : 0;\n};\n\nconst euro2 = (v) => `${toNumber(v).toFixed(2)} €`;\n\nconst fmtDate = (v) => {\n  try {\n    const d = new Date(v);\n    if (!isNaN(d.getTime())) {\n      const dd = String(d.getDate()).padStart(2, \"0\");\n      const mm = String(d.getMonth() + 1).padStart(2, \"0\");\n      const yyyy = d.getFullYear();\n      return `${dd}.${mm}.${yyyy}`;\n    }\n  } catch {}\n  const s = String(v ?? \"\").split(\" \")[0];\n  return s.replace(/\\//g, \".\").replace(/-/g, \".\");\n};\n\n// ============================================\n// MUOTOILUT\n// ============================================\nconst ISSUE_DATE_FMT = fmtDate(human_now);\nconst PAID_AT_FMT = fmtDate(human_now);\nconst RECEIPT_NUMBER = String(stamp ?? \"\");\nconst PAYMENT_METHOD = String(payment_method ?? \"\");\nconst CUSTOMER_NAME = String(buyer_name ?? \"\");\nconst CUSTOMER_EMAIL = String(buyer_email ?? \"\");\nconst CUSTOMER_PHONE = String(buyer_phone ?? \"\");\nconst ADDRESS_PICKUP = String(address_pickup ?? \"\");\nconst ADDRESS_DELIVERY = String(address_delivery ?? \"\");\nconst SUBTOTAL_EUR = euro2(subtotal_raw);\nconst VAT_EUR = euro2(vat_raw);\nconst TOTAL_EUR = euro2(total_raw);\n\n// ============================================\n// TUOTERIVIT\n// ============================================\nconst rows = `\n    <tr>\n      <td class=\"t-left\">${esc(item_name)}</td>\n      <td class=\"t-right\">${esc(item_qty)}</td>\n      <td class=\"t-right\">${euro2(item_unit_price)}</td>\n      <td class=\"t-right\">${euro2(item_vat)}</td>\n      <td class=\"t-right\">${euro2(item_total)}</td>\n    </tr>`;\n\n// ============================================\n// HTML\n// ============================================\nconst html = `<!doctype html>\n<html lang=\"fi\">\n<head>\n<meta charset=\"utf-8\">\n<title>Kuitti</title>\n<style>\n  @page { size: A4; margin: 12mm; }\n  html, body { height: auto; }\n  body { margin:0; background:#fff; color:#111827; font-family:Arial,Helvetica,sans-serif; font-size:12.5px; line-height:1.45; }\n  .wrap { max-width:185mm; margin:0 auto; }\n  .header { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; padding:6px 0 14px; border-bottom:2px solid #efefef; }\n  .brand { font-size:24px; font-weight:800; color:#de242d; }\n  .doc-meta { text-align:right; font-size:12px; }\n  .doc-meta b { color:#0f172a; }\n  .paid-badge { display:inline-block; margin-top:6px; padding:4px 10px; background:#de242d; color:#fff; font-weight:700; border-radius:6px; font-size:12px; }\n  h1 { margin:14px 0 10px; font-size:18px; color:#0f172a; }\n  h2 { margin:14px 0 6px; font-size:14px; color:#0f172a; }\n  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:6px; }\n  .card { border:1px solid #edeff2; border-radius:10px; padding:12px; background:#fff; }\n  table { width:100%; border-collapse:collapse; }\n  .items { margin-top:14px; border:1px solid #edeff2; border-radius:10px; overflow:hidden; table-layout: fixed; }\n  .items col.col-name { width: 46%; }\n  .items col.col-qty  { width: 12%; }\n  .items col.col-unit { width: 14%; }\n  .items col.col-vat  { width: 14%; }\n  .items col.col-tot  { width: 14%; }\n  .items thead th { background:#f7f7f9; color:#0f172a; font-weight:700; font-size:12px; padding:10px; border-bottom:1px solid #edeff2; }\n  .items thead th.t-left  { text-align:left; }\n  .items thead th.t-right { text-align:right; }\n  .items tbody td { padding:9px 10px; border-bottom:1px solid #f0f2f5; }\n  .items tbody td.t-left  { text-align:left; }\n  .items tbody td.t-right { text-align:right; white-space:nowrap; }\n  .totals { margin-top:10px; display:grid; grid-template-columns:1fr 200px; gap:12px; }\n  .totals .box { border:1px solid #edeff2; border-radius:10px; padding:10px; background:#fff; }\n  .totals td { padding:6px 0; }\n  .totals td:last-child { text-align:right; font-weight:600; }\n  .note { margin-top:10px; font-size:11px; color:#64748b; }\n  .header, .grid-2, .items, .totals, .card { page-break-inside: avoid; }\n</style>\n</head>\n<body>\n  <div class=\"wrap\">\n    <div class=\"header\">\n      <div class=\"brand\">Apukuski</div>\n      <div class=\"doc-meta\">\n        <div><b>KUITTI</b></div>\n        <div>Numero: <b>${esc(RECEIPT_NUMBER)}</b></div>\n        <div>Päivämäärä: <b>${esc(ISSUE_DATE_FMT)}</b></div>\n        <div>Maksettu: <b>${esc(PAID_AT_FMT)}</b></div>\n        <div>Maksutapa: <b>${esc(PAYMENT_METHOD)}</b></div>\n        <div class=\"paid-badge\">Maksettu ✅</div>\n      </div>\n    </div>\n    <h1>Kuitin tiedot</h1>\n    <div class=\"grid-2\">\n      <div class=\"card\">\n        <h2>Myyjä</h2>\n        <div><b>Apukuski Logistics</b></div>\n        <div>Åkerlundinkatu 8</div>\n        <div>33100 Tampere</div>\n        <div>044 774 7744</div>\n        <div>info@apukuski.com</div>\n        <div>Y-tunnus: 3130645-9</div>\n      </div>\n      <div class=\"card\">\n        <h2>Asiakas</h2>\n        <div><b>${esc(CUSTOMER_NAME)}</b></div>\n        <div>${esc(CUSTOMER_EMAIL)}</div>\n        <div>${esc(CUSTOMER_PHONE)}</div>\n      </div>\n    </div>\n    <div class=\"card\" style=\"margin-top:12px;\">\n      <b>Kuljetus:</b> ${esc(ADDRESS_PICKUP)} → ${esc(ADDRESS_DELIVERY)}\n    </div>\n    <table class=\"items\">\n      <colgroup>\n        <col class=\"col-name\" />\n        <col class=\"col-qty\" />\n        <col class=\"col-unit\" />\n        <col class=\"col-vat\" />\n        <col class=\"col-tot\" />\n      </colgroup>\n      <thead>\n        <tr>\n          <th class=\"t-left\">Tuote / Palvelu</th>\n          <th class=\"t-right\">Määrä</th>\n          <th class=\"t-right\">Yks. hinta</th>\n          <th class=\"t-right\">ALV</th>\n          <th class=\"t-right\">Yhteensä</th>\n        </tr>\n      </thead>\n      <tbody>\n        ${rows}\n      </tbody>\n    </table>\n    <div class=\"totals\">\n      <div class=\"box\">\n        <div><b>Lisätiedot</b></div>\n        Kuljetus: ${esc(ADDRESS_PICKUP)} → ${esc(ADDRESS_DELIVERY)}\n      </div>\n      <div class=\"box\">\n        <table>\n          <tr><td>Välisumma</td><td style=\"text-align:right;\">${esc(SUBTOTAL_EUR)}</td></tr>\n          <tr><td>ALV 25,5%</td><td style=\"text-align:right;\">${esc(VAT_EUR)}</td></tr>\n          <tr><td><b>Yhteensä</b></td><td style=\"text-align:right;\"><b>${esc(TOTAL_EUR)}</b></td></tr>\n        </table>\n      </div>\n    </div>\n    <div class=\"note\">\n      Tämä on koneellisesti tuotettu kuitti. Säilytä tositteena kirjanpitoa varten.\n    </div>\n  </div>\n</body>\n</html>`;\n\nreturn [{\n    json: {\n        html: html\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5840,
+        224
+      ],
+      "id": "9d67fa86-07ac-4701-986c-2857b9ee95b6",
+      "name": "Generate offer HTML (normal)1"
+    },
+    {
+      "parameters": {
+        "operation": "URL/HTML to PDF",
+        "convertType": "htmlToPDF",
+        "html": "={{ $json.html }}",
+        "advancedOptions": {}
+      },
+      "type": "n8n-nodes-pdfco.PDFco Api",
+      "typeVersion": 1,
+      "position": [
+        6064,
+        224
+      ],
+      "id": "4eee3606-807c-422f-9495-ed71dcfa8fb9",
+      "name": "PDFco Api1",
+      "credentials": {
+        "pdfcoApi": {
+          "id": "FcVZXcHXlKANxPAA",
+          "name": "PDF.co account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Get a Record by ID').item.json.Email }}",
+        "subject": "Tilausvahvistus ja kuitti",
+        "message": "=<div style=\"font-family: Arial, sans-serif; color: #333; line-height: 1.6; font-size: 16px; max-width: 640px; margin: 0 auto;\">\n\n  <p>Hei!</p>\n\n  <p>\n    Kiitos tilauksesta! Olemme sinuun yhteydessä mahdollisimman pian kuljetuksen aikatauluista. 😊\n  </p>\n\n  <p><b>Löydät kuitin maksutapahtumasta tämän viestin liitteistä.</b></p>\n\n  <p>\n    Tilauksesi on kirjautunut järjestelmäämme seuraavilla tiedoilla:\n  </p>\n\n  <div style=\"margin: 14px 0 20px; padding: 14px 16px; background: #f7f7f7; border-radius: 8px; border: 1px solid #ddd;\">\n    <p><b>Palvelu:</b> Kuljetus</p>\n    <p><b>Hinta:</b> {{ $('Get a Record by ID').item.json['Total Price (VAT incl.)'] }}€ (sis. alv 25,5%)</p>\n    <p><b>Aikataulut:</b> Tarjouksen mukaisesti. </p>\n\n    <p><b>Nouto-osoite:</b><br>\n    {{ $('Get a Record by ID').item.json['Address (Pickup)'] }}</p>\n\n    <p><b>Toimitusosoite:</b><br>\n    {{ $('Get a Record by ID').item.json['Address (Delivery)'] }}</p>\n\n    <p><b>Kuljetettavat tavarat:</b> Tarjouksen mukaisesti. </p>\n  </div>\n\n  <p><b>Tarvitsetko apua?</b><br>\n  Tilaukseen liittyvissä asioissa, otathan yhteyttä asiakaspalveluumme.</p>\n\n  <p>\n    Puhelin: 044 774 7744<br>\n    Sähköposti: info@apukuski.com\n  </p>\n\n  <p><b>Tilauksen peruuttaminen</b><br>\n  Voit peruuttaa tilauksen viimeistään yksi (1) arkipäivä ennen kuin työn on määrä alkaa.</p>\n\n  <p style=\"margin-top: 25px;\">\n    Ystävällisin terveisin,<br>\n    <b>Apukuskit</b><br>\n    <a href=\"https://apukuski.com\" style=\"color: #0d6efd; text-decoration: none;\">apukuski.com</a>\n  </p>\n\n</div>\n",
+        "options": {
+          "appendAttribution": false,
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        6736,
+        416
+      ],
+      "id": "464ccb19-3346-4aae-8a88-d239ca9cf4b7",
+      "name": "Send a message (normal)",
+      "webhookId": "f6331425-cc1a-43a0-ac7d-fd0190196476",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "JFmJyfbEKW965FhO",
+          "name": "Gmail account (info)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Get a Record by ID').item.json.Email }}",
+        "subject": "Tilausvahvistus ja kuitti",
+        "message": "=<div style=\"font-family: Arial, sans-serif; color: #333; line-height: 1.6; font-size: 16px; max-width: 640px; margin: 0 auto;\">\n\n  <p>Hei!</p>\n\n  <p>\n    Kiitos tilauksesta! Olemme sinuun yhteydessä mahdollisimman pian kuljetuksen aikatauluista. 😊\n  </p>\n\n  <p><b>Löydät kuitin maksutapahtumasta tämän viestin liitteistä.</b></p>\n\n  <p>\n    Tilauksesi on kirjautunut järjestelmäämme seuraavilla tiedoilla:\n  </p>\n\n  <div style=\"margin: 14px 0 20px; padding: 14px 16px; background: #f7f7f7; border-radius: 8px; border: 1px solid #ddd;\">\n    <p><b>Palvelu:</b> Kuljetus</p>\n    <p><b>Hinta:</b> {{ $('Get a Record by ID').item.json['Bundle Price (VAT incl.)'] }}€ (sis. alv 25,5%)</p>\n    <p><b>Aikataulut:</b> Tarjouksen mukaisesti.</p>\n\n    <p><b>Nouto-osoite:</b><br>\n   {{ $('Get a Record by ID').item.json['Address (Pickup)'] }}</p>\n\n    <p><b>Toimitusosoite:</b><br>\n    {{ $('Get a Record by ID').item.json['Address (Delivery)'] }}</p>\n\n    <p><b>Kuljetettavat tavarat:</b> Tarjouksen mukaisesti. </p>\n  </div>\n\n  <p><b>Tarvitsetko apua?</b><br>\n  Tilaukseen liittyvissä asioissa, otathan yhteyttä asiakaspalveluumme.</p>\n\n  <p>\n    Puhelin: 044 774 7744<br>\n    Sähköposti: info@apukuski.com\n  </p>\n\n  <p><b>Tilauksen peruuttaminen</b><br>\n  Voit peruuttaa tilauksen viimeistään yksi (1) arkipäivä ennen kuin työn on määrä alkaa.</p>\n\n  <p style=\"margin-top: 25px;\">\n    Ystävällisin terveisin,<br>\n    <b>Apukuskit</b><br>\n    <a href=\"https://apukuski.com\" style=\"color: #0d6efd; text-decoration: none;\">apukuski.com</a>\n  </p>\n\n</div>",
+        "options": {
+          "appendAttribution": false,
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          },
+          "senderName": "Apukuski"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        6736,
+        224
+      ],
+      "id": "e725b870-be67-4c1d-b972-9870a3375fe9",
+      "name": "Send a message (budget)",
+      "webhookId": "f6331425-cc1a-43a0-ac7d-fd0190196476",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "JFmJyfbEKW965FhO",
+          "name": "Gmail account (info)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nfor (const item of items) {\n    if (item.binary && item.binary.data) {\n        item.binary.data.fileName = 'Apukuski-Kuitti.pdf';\n    }\n}\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6512,
+        224
+      ],
+      "id": "a6e0928d-fe35-49ca-9b38-7a4b6b3549fa",
+      "name": "Tiedoston nimeäminen"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        6288,
+        224
+      ],
+      "id": "3834e4e7-ecb3-4b7d-8da6-8b24f18f342d",
+      "name": "PDF lataus",
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        6288,
+        416
+      ],
+      "id": "e754d4aa-a766-40bc-9f25-f2a4e99f373d",
+      "name": "PDF lataus1",
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nfor (const item of items) {\n    if (item.binary && item.binary.data) {\n        item.binary.data.fileName = 'Apukuski-Kuitti.pdf';\n    }\n}\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6512,
+        416
+      ],
+      "id": "6c528ce7-fb3c-4e36-a968-ccbd696abc10",
+      "name": "Tiedoston nimeäminen1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n    json: {\n        headers: {\n            \"host\": \"apukuski.app.n8n.cloud\",\n            \"user-agent\": \"Paytrail Payment Registration\",\n            \"accept-encoding\": \"gzip, br\",\n            \"cdn-loop\": \"cloudflare; loops=1; subreqs=1\",\n            \"cf-connecting-ip\": \"52.57.195.236\",\n            \"cf-ew-via\": \"15\",\n            \"cf-ipcountry\": \"DE\",\n            \"cf-ray\": \"9d632a947d299f54-FRA\",\n            \"cf-visitor\": \"{\\\"scheme\\\":\\\"https\\\"}\",\n            \"cf-worker\": \"n8n.cloud\",\n            \"request-id\": \"f2fc5057-92e9-4648-bcc3-8268b1bec7cd\",\n            \"x-forwarded-for\": \"52.57.195.236, 172.68.193.187\",\n            \"x-forwarded-host\": \"apukuski.app.n8n.cloud\",\n            \"x-forwarded-port\": \"443\",\n            \"x-forwarded-proto\": \"https\",\n            \"x-forwarded-server\": \"traefik-prod-users-gwc-87-6ff77fb585-g225z\",\n            \"x-is-trusted\": \"yes\",\n            \"x-real-ip\": \"52.57.195.236\"\n        },\n        params: {},\n        query: {\n            \"checkout-account\": \"1102667\",\n            \"checkout-algorithm\": \"sha256\",\n            \"checkout-amount\": \"1\",\n            \"checkout-stamp\": \"01046-1772483417614\",\n            \"checkout-reference\": \"01275\",\n            \"checkout-status\": \"ok\",\n            \"checkout-provider\": \"osuuspankki\",\n            \"checkout-transaction-id\": \"6065c342-9932-4614-9912-5cdb25be9537\",\n            \"signature\": \"3cfa5fe46a633d643716959aa838ed02f7366bc88c75a971136907d9d983b366\"\n        },\n        body: {},\n        webhookUrl: \"https://apukuski.app.n8n.cloud/webhook/39574924-47a4-434f-bdb6-dfb4c2986758\",\n        executionMode: \"production\"\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4496,
+        224
+      ],
+      "id": "c4c513d6-336e-4ace-8132-1abfcff73a1c",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        6960,
+        320
+      ],
+      "id": "a6d65d06-8d6c-431d-bed6-fc4b208bcb41",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://u6bcjeuot2.execute-api.eu-central-1.amazonaws.com/production/register",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n      \"firstName\": \"{{ $('Pilko nimi').item.json.firstName }}\",\n      \"lastName\": \"{{ $('Pilko nimi').item.json.lastName }}\",\n      \"email\": \"{{ $json.Email }}\",\n      \"phoneNumber\": \"{{ $json.Phone }}\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        7632,
+        320
+      ],
+      "id": "d3147b4c-fbb3-46c6-833c-c267a227cb6e",
+      "name": "Luo käyttäjä order appiin"
+    },
+    {
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "value": "appGkn53DdtjFGmWV",
+          "mode": "list",
+          "cachedResultName": "ApuCenter",
+          "cachedResultUrl": "https://airtable.com/appGkn53DdtjFGmWV"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl20FO42hsfHDESX",
+          "mode": "list",
+          "cachedResultName": "Offers",
+          "cachedResultUrl": "https://airtable.com/appGkn53DdtjFGmWV/tbl20FO42hsfHDESX"
+        },
+        "id": "={{ $('Get a Record by ID').item.json.id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        7184,
+        320
+      ],
+      "id": "036146c6-1697-45db-a4a8-63e5888be4d6",
+      "name": "Päivitetyt tilaustiedot",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "NuIpe8hOcHLb3eZj",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const name = $input.first().json.Name;\n\nconst names = name.split(' ');\nconst firstName = names[0];\nconst lastName = names.slice(1).join(' ') || '';\n\nreturn [{ json: { ...$input.first().json, firstName: firstName, lastName: lastName } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        7408,
+        320
+      ],
+      "id": "a8311a11-1f4e-4311-a7b4-4226d8d0b0d3",
+      "name": "Pilko nimi"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.error }}",
+                    "rightValue": "User already exists",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "adde06d8-8a4f-485e-a1e2-6c0ad1097801"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b54a48b4-4592-4c9a-aca6-3a3ad6d2660e",
+                    "leftValue": "={{ $json.userId }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        7856,
+        320
+      ],
+      "id": "ca595ef7-3180-4d5a-862b-6084d1320911",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://qtml5qv6uk.execute-api.eu-central-1.amazonaws.com/production/order/import",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "oz6Dcgxn5k3px6a3fN9NU5YHshMuYpxP4NNyMdi4"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (() => {\n    const rec = $('Päivitetyt tilaustiedot').item.json;\n    const userId = $json.userId || $('Luo käyttäjä order appiin').item.json.userId;\n    const provider = $('Code in JavaScript1').item.json.query['checkout-provider'] || '';\n\n    const toCents = v => Math.round(parseFloat(String(v ?? '0').replace(',', '.').replace(/[^\\d.-]/g, '')) * 100);\n    const toInt = v => { const n = parseInt(v, 10); return Number.isFinite(n) ? n : 0; };\n    const isElev = v => ['kyllä','yes','true','1','on'].includes(String(v ?? '').trim().toLowerCase());\n\n    const isBudget = rec.Palvelutaso === 'budget';\n    const vatIncl = isBudget ? rec['Bundle Price (VAT incl.)'] : rec['Total Price (VAT incl.)'];\n    const vat0    = isBudget ? rec['Bundle Price (VAT 0)']    : rec['Total Price (VAT 0)'];\n    const vatPriceCents  = toCents(vatIncl);\n    const basePriceCents = toCents(vat0);\n\n    const goods = rec['Goods to be transported'] || 'Kuljetettavat tavarat';\n\n    return JSON.stringify({\n      userId,\n      orderType: { fi: 'Kuljetus', en: 'Transportation' },\n      content: [{\n        id: '99',\n        count: '1',\n        title: { fi: goods, en: goods },\n        itemDimensions: { volume: '0', weight: '0' }\n      }],\n      stops: [\n        {\n          address: rec['Address (Pickup)'] || '',\n          apartment: rec['Apartment (Pickup)'] || '',\n          location: { latitude: String(rec['lat (Pickup)'] ?? '0'), longitude: String(rec['lon (Pickup)'] ?? '0') },\n          carryingNeeds: {\n            carrierCount: toInt(rec['Carrying (Pickup)']) || 1,\n            floors: { floor: toInt(rec['Floor (Pickup)']), elevatorInUse: isElev(rec['Elevator (Pickup)']) }\n          },\n          contactInfo: {\n            name: rec['Contact name (Pickup)'] || rec.Name || '',\n            phoneNumber: rec['Phone (Pickup)'] || rec.Phone || ''\n          },\n          information: rec['Info (Pickup)'] || ''\n        },\n        {\n          address: rec['Address (Delivery)'] || '',\n          apartment: rec['Apartment (Delivery)'] || '',\n          location: { latitude: String(rec['lat (Delivery)'] ?? '0'), longitude: String(rec['lon (Delivery)'] ?? '0') },\n          carryingNeeds: {\n            carrierCount: toInt(rec['Carrying (Delivery)']) || 1,\n            floors: { floor: toInt(rec['Floor (Delivery)']), elevatorInUse: isElev(rec['Elevator (Delivery)']) }\n          },\n          contactInfo: {\n            name: rec['Contact name (Delivery)'] || rec.Name || '',\n            phoneNumber: rec['Phone (Delivery)'] || rec.Phone || ''\n          },\n          information: rec['Info (Delivery)'] || ''\n        }\n      ],\n      charge: {\n        basePrice: basePriceCents,\n        vatPrice: vatPriceCents,\n        vatPercentage: '25.5',\n        serviceFee: 0,\n        servicesPrice: 0,\n        platformFee: 0,\n        hubDrivePrice: 0,\n        workPrice: 0\n      },\n      amountPaid: vatPriceCents,\n      paymentMethod: provider,\n      origin: rec.source || 'n8n-offer'\n    });\n  })() }}\n",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "ff85c0fd-9dc8-4aef-9504-3aedb83c307f",
+      "name": "Luo Schedule Later tilaus order appiin",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        8688,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://qtml5qv6uk.execute-api.eu-central-1.amazonaws.com/production/customer",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $('Päivitetyt tilaustiedot').item.json.Email }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "oz6Dcgxn5k3px6a3fN9NU5YHshMuYpxP4NNyMdi4"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "24a13754-7982-4486-bd1b-75ae85cc18d5",
+      "name": "Hae olemassaoleva asiakas sähköpostilla",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        8112,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const email = ($('Päivitetyt tilaustiedot').item.json.Email || '').toLowerCase().trim();\n  const body = $input.first().json;\n  const list = Array.isArray(body) ? body : (Array.isArray(body?.data) ? body.data : []);\n\n  const hit = list.find(c => (c.email || '').toLowerCase().trim() === email);\n  if (!hit || !hit.userId) {\n    throw new Error(`No existing customer found for email ${email}. Search returned ${list.length} rows.`);\n  }\n  return [{ json: { userId: hit.userId, email: hit.email } }];"
+      },
+      "id": "9da4f429-124f-4b31-b97d-e3da99bb0124",
+      "name": "Extract matching userId",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        8400,
+        144
+      ]
+    },
+    {
+      "id": "bbbbbbbb-pay1-pay1-pay1-000000000001",
+      "name": "Payments: Build Paytrail Record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4720,
+        650
+      ],
+      "continueOnFail": true,
+      "parameters": {
+        "jsCode": "// Records completed Paytrail payments into Supabase payments_paytrail, running in a\n// parallel branch off \"Code in JavaScript1\" -- does not touch or depend on the existing\n// offer-fulfillment branches (PDF receipts, emails, order creation). continueOnFail is set\n// on every node in this branch so a bug here can never break those for a real customer.\n// Added 2026-08-12 -- see docs/STATUS.md workstream E.\nconst crypto = require('crypto');\n\nconst AIRTABLE_API_KEY = 'AIRTABLE_API_KEY_PLACEHOLDER';\nconst AIRTABLE_BASE_ID = 'appGkn53DdtjFGmWV';\nconst AIRTABLE_OFFERS_TABLE = 'Offers';\nconst PAYTRAIL_MERCHANT_ID = 'PAYTRAIL_MERCHANT_ID_PLACEHOLDER';\nconst PAYTRAIL_SECRET_KEY = 'PAYTRAIL_SECRET_KEY_PLACEHOLDER';\n\nconst q = $json.query || {};\nconst transactionId = q['checkout-transaction-id'];\nconst reference = q['checkout-reference'] || null;\n\nif (!transactionId) {\n  return [];\n}\n\n// -- 1. Resolve order_id ----------------------------------------------------\n// checkout-reference is NOT reliably an orders.order_id -- confirmed live 2026-08-12 it's a\n// UUID order_id for direct order-settlement payments, but a short Airtable OfferID for the\n// \"schedule later\" freight/offer flow (Offers -> Paytrail -> Backoffice /order/import, only\n// after payment). Resolve via Airtable when it doesn't look like a UUID.\nconst UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\nlet orderId = null;\nif (reference && UUID_RE.test(reference)) {\n  orderId = reference;\n} else if (reference) {\n  try {\n    const formula = encodeURIComponent(`{OfferID}='${reference}'`);\n    const resp = await this.helpers.httpRequest({\n      method: 'GET',\n      url: `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_OFFERS_TABLE}?filterByFormula=${formula}&fields%5B%5D=Order%20Link`,\n      headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` },\n      json: true,\n    });\n    const rec = (resp.records || [])[0];\n    const link = rec && rec.fields && rec.fields['Order Link'];\n    if (link) {\n      const m = String(link).match(/orderId=([0-9a-f-]{36})/i);\n      if (m) orderId = m[1];\n    }\n  } catch (e) {\n    console.log('Airtable OfferID lookup failed (non-fatal):', e.message || String(e));\n  }\n}\n\n// -- 2. Fetch full payment detail from Paytrail ------------------------------\n// Callback query params alone don't carry paidAt/currency/filingCode/settlementReference.\n// HMAC scheme matches the existing \"Create paytrail payment link\" node's POST signing, but\n// GET here additionally requires checkout-transaction-id in the signed header set (confirmed\n// via a live 401 without it, 2026-08-12).\nlet full = null;\ntry {\n  const nonce = crypto.randomUUID();\n  const timestamp = new Date().toISOString();\n  const headers = {\n    'checkout-account': PAYTRAIL_MERCHANT_ID,\n    'checkout-algorithm': 'sha256',\n    'checkout-method': 'GET',\n    'checkout-nonce': nonce,\n    'checkout-timestamp': timestamp,\n    'checkout-transaction-id': transactionId,\n  };\n  const toSign = Object.keys(headers).sort().map(k => `${k}:${headers[k]}`).join('\\n') + '\\n';\n  const signature = crypto.createHmac('sha256', PAYTRAIL_SECRET_KEY).update(toSign, 'utf-8').digest('hex');\n  full = await this.helpers.httpRequest({\n    method: 'GET',\n    url: `https://services.paytrail.com/payments/${transactionId}`,\n    headers: Object.assign({}, headers, { signature }),\n    json: true,\n  });\n} catch (e) {\n  console.log('Paytrail GET /payments detail fetch failed (non-fatal, callback data only):', e.message || String(e));\n}\n\n// -- 3. Build the row ---------------------------------------------------------\nconst row = {\n  transaction_id: transactionId,\n  reference: reference,\n  stamp: (full && full.stamp) || q['checkout-stamp'] || null,\n  order_id: orderId,\n  status: (full && full.status) || q['checkout-status'] || null,\n  amount_cents: (full && full.amount != null) ? full.amount : (q['checkout-amount'] != null ? parseInt(q['checkout-amount'], 10) : null),\n  currency: (full && full.currency) || 'EUR',\n  provider: (full && full.provider) || q['checkout-provider'] || null,\n  created_at: (full && full.createdAt) || null,\n  paid_at: (full && full.paidAt) || null,\n  fee_cents: null,\n  refund_amount_cents: null,\n  filing_code: (full && full.filingCode) || null,\n  settlement_reference: (full && full.settlementReference) || null,\n  raw_payload: full || { callback_query: q },\n  synced_at: new Date().toISOString(),\n};\n\nreturn [{ json: row }];\n"
+      }
+    },
+    {
+      "id": "bbbbbbbb-pay1-pay1-pay1-000000000002",
+      "name": "Payments: Upsert to Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4944,
+        650
+      ],
+      "continueOnFail": true,
+      "parameters": {
+        "method": "POST",
+        "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/payments_paytrail?on_conflict=transaction_id",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "bbbbbbbb-pay1-pay1-pay1-000000000003",
+      "name": "Payments: Log Sync",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5168,
+        650
+      ],
+      "continueOnFail": true,
+      "parameters": {
+        "method": "POST",
+        "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/sync_log",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ workflow: 'Paytrail Payment Callback Tracking (payments sync)', started_at: $('Payments: Build Paytrail Record').item.json.synced_at, completed_at: new Date().toISOString(), date_range: $('Payments: Build Paytrail Record').item.json.transaction_id, rows_upserted: 1, status: 'success' }) }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Payments: Build Paytrail Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Update record in Offers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update record in Offers": {
+      "main": [
+        [
+          {
+            "node": "Get a Record by ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a Record by ID": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Generate offer HTML (normal)1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate offer HTML (normal)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate offer HTML (normal)": {
+      "main": [
+        [
+          {
+            "node": "PDFco Api",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate offer HTML (normal)1": {
+      "main": [
+        [
+          {
+            "node": "PDFco Api1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDFco Api": {
+      "main": [
+        [
+          {
+            "node": "PDF lataus1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDFco Api1": {
+      "main": [
+        [
+          {
+            "node": "PDF lataus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tiedoston nimeäminen": {
+      "main": [
+        [
+          {
+            "node": "Send a message (budget)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDF lataus": {
+      "main": [
+        [
+          {
+            "node": "Tiedoston nimeäminen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDF lataus1": {
+      "main": [
+        [
+          {
+            "node": "Tiedoston nimeäminen1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tiedoston nimeäminen1": {
+      "main": [
+        [
+          {
+            "node": "Send a message (normal)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message (budget)": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message (normal)": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Päivitetyt tilaustiedot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Luo käyttäjä order appiin": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Päivitetyt tilaustiedot": {
+      "main": [
+        [
+          {
+            "node": "Pilko nimi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hae olemassaoleva asiakas sähköpostilla": {
+      "main": [
+        [
+          {
+            "node": "Extract matching userId",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pilko nimi": {
+      "main": [
+        [
+          {
+            "node": "Luo käyttäjä order appiin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Hae olemassaoleva asiakas sähköpostilla",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Luo Schedule Later tilaus order appiin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract matching userId": {
+      "main": [
+        [
+          {
+            "node": "Luo Schedule Later tilaus order appiin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payments: Build Paytrail Record": {
+      "main": [
+        [
+          {
+            "node": "Payments: Upsert to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payments: Upsert to Supabase": {
+      "main": [
+        [
+          {
+            "node": "Payments: Log Sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "26c90d24-4694-43d9-a388-a0494b3c580c",
+  "activeVersionId": "26c90d24-4694-43d9-a388-a0494b3c580c",
+  "versionCounter": 49,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-03-02T19:39:49.914Z",
+      "createdAt": "2026-03-02T19:39:49.914Z",
+      "role": "workflow:owner",
+      "workflowId": "iXwwwZyEkD1ZsrYA",
+      "projectId": "Np1bIu26iReQn7j1",
+      "project": {
+        "updatedAt": "2026-04-10T10:21:52.000Z",
+        "createdAt": "2025-09-18T19:32:17.532Z",
+        "id": "Np1bIu26iReQn7j1",
+        "name": "Apukuski",
+        "type": "team",
+        "icon": {
+          "type": "icon",
+          "value": "layers"
+        },
+        "description": "",
+        "projectRelations": [
+          {
+            "updatedAt": "2025-09-18T19:32:47.672Z",
+            "createdAt": "2025-09-18T19:32:47.672Z",
+            "userId": "c4d0261a-8c71-4f1b-9c79-d48cb4437ae8",
+            "projectId": "Np1bIu26iReQn7j1",
+            "user": {
+              "updatedAt": "2026-08-11T21:00:12.000Z",
+              "createdAt": "2025-09-18T18:53:58.096Z",
+              "id": "c4d0261a-8c71-4f1b-9c79-d48cb4437ae8",
+              "email": "arttu@apukuski.com",
+              "firstName": "Arttu",
+              "lastName": "Hilli",
+              "personalizationAnswers": null,
+              "settings": {
+                "userActivated": false,
+                "easyAIWorkflowOnboarded": true,
+                "userClaimedAiCredits": true,
+                "dismissedCallouts": {
+                  "aiAgentStarterCallout": true
+                }
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-08-11",
+              "isPending": false
+            }
+          },
+          {
+            "updatedAt": "2026-01-08T16:33:48.433Z",
+            "createdAt": "2026-01-08T16:33:48.433Z",
+            "userId": "18091c87-0c26-42f3-a65c-7abb45007a85",
+            "projectId": "Np1bIu26iReQn7j1",
+            "user": {
+              "updatedAt": "2026-08-12T06:47:24.000Z",
+              "createdAt": "2026-01-08T16:32:47.431Z",
+              "id": "18091c87-0c26-42f3-a65c-7abb45007a85",
+              "email": "jussi@apukuski.com",
+              "firstName": "Jussi",
+              "lastName": "Luhtasela",
+              "personalizationAnswers": null,
+              "settings": {
+                "userClaimedAiCredits": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "6PvEApVv7014sW5g",
+                "userActivated": true,
+                "userActivatedAt": 1770657800897,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1772021463615
+                }
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-08-11",
+              "isPending": false
+            }
+          },
+          {
+            "updatedAt": "2026-01-15T08:39:44.738Z",
+            "createdAt": "2026-01-15T08:39:44.738Z",
+            "userId": "f8478030-77a0-4126-a0eb-3fd60b507927",
+            "projectId": "Np1bIu26iReQn7j1",
+            "user": {
+              "updatedAt": "2026-08-11T21:34:54.000Z",
+              "createdAt": "2026-01-12T18:02:06.951Z",
+              "id": "f8478030-77a0-4126-a0eb-3fd60b507927",
+              "email": "joonas@apukuski.com",
+              "firstName": "Joonas",
+              "lastName": "Mykkänen",
+              "personalizationAnswers": null,
+              "settings": {
+                "easyAIWorkflowOnboarded": true
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-08-11",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-08-08T06:12:00.546Z",
+    "createdAt": "2026-08-08T06:12:00.546Z",
+    "versionId": "26c90d24-4694-43d9-a388-a0494b3c580c",
+    "workflowId": "iXwwwZyEkD1ZsrYA",
+    "nodes": [
+      {
+        "parameters": {
+          "path": "39574924-47a4-434f-bdb6-dfb4c2986758",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          4496,
+          416
+        ],
+        "id": "7d52362e-7807-4d98-af51-0ba047d7bcb7",
+        "name": "Webhook",
+        "webhookId": "39574924-47a4-434f-bdb6-dfb4c2986758"
+      },
+      {
+        "parameters": {},
+        "type": "n8n-nodes-base.manualTrigger",
+        "typeVersion": 1,
+        "position": [
+          4272,
+          224
+        ],
+        "id": "bfc0bb9a-68f2-4c1c-a950-7ddfead56ca9",
+        "name": "When clicking ‘Execute workflow’"
+      },
+      {
+        "parameters": {
+          "jsCode": "return $input.all();"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          4720,
+          320
+        ],
+        "id": "0126c49b-5355-4fb3-876a-1ac24e3f89d3",
+        "name": "Code in JavaScript1"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "ec6b939e-2eb2-4112-8763-0731d93884fd",
+                "leftValue": "={{ $json.query['checkout-status'] }}",
+                "rightValue": "ok",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          4944,
+          320
+        ],
+        "id": "bbe2ff80-6bf1-415e-9431-09a4f8fb66a3",
+        "name": "If"
+      },
+      {
+        "parameters": {
+          "operation": "update",
+          "base": {
+            "__rl": true,
+            "value": "appGkn53DdtjFGmWV",
+            "mode": "list",
+            "cachedResultName": "ApuCenter",
+            "cachedResultUrl": "https://airtable.com/appGkn53DdtjFGmWV"
+          },
+          "table": {
+            "__rl": true,
+            "value": "tbl20FO42hsfHDESX",
+            "mode": "list",
+            "cachedResultName": "Offers",
+            "cachedResultUrl": "https://airtable.com/appGkn53DdtjFGmWV/tbl20FO42hsfHDESX"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "Status": "Maksettu ja hyväksytty",
+              "OfferID": "={{ $json.query['checkout-reference'] }}"
+            },
+            "matchingColumns": [
+              "OfferID"
+            ],
+            "schema": [
+              {
+                "id": "id",
+                "displayName": "id",
+                "required": false,
+                "defaultMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": true,
+                "removed": true
+              },
+              {
+                "id": "Row",
+                "displayName": "Row",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": true,
+                "removed": true
+              },
+              {
+                "id": "OfferID",
+                "displayName": "OfferID",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": true,
+                "removed": false
+              },
+              {
+                "id": "Palvelutaso",
+                "displayName": "Palvelutaso",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Viimeistään",
+                "displayName": "Viimeistään",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": true,
+                "removed": true
+              },
+              {
+                "id": "Myyntipäivä",
+                "displayName": "Myyntipäivä",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Request for quotation",
+                "displayName": "Request for quotation",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": true,
+                "removed": true
+              },
+              {
+                "id": "In service area",
+                "displayName": "In service area",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "boolean",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Source",
+                "displayName": "Source",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "options",
+                "options": [
+                  {
+                    "name": "kiertonet.fi",
+                    "value": "kiertonet.fi"
+                  },
+                  {
+                    "name": "apukuski.com",
+                    "value": "apukuski.com"
+                  },
+                  {
+                    "name": "WhatsApp",
+                    "value": "WhatsApp"
+                  },
+                  {
+                    "name": "Rahtiputki",
+                    "value": "Rahtiputki"
+                  },
+                  {
+                    "name": "turunmuuttopalvelu.fi",
+                    "value": "turunmuuttopalvelu.fi"
+                  }
+                ],
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Status",
+                "displayName": "Status",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "options",
+                "options": [
+                  {
+                    "name": "1. säpö",
+                    "value": "1. säpö"
+                  },
+                  {
+                    "name": "Lisätiedot",
+                    "value": "Lisätiedot"
+                  },
+                  {
+                    "name": "Tarjous (+txt)",
+                    "value": "Tarjous (+txt)"
+                  },
+                  {
+                    "name": "Kiinteä tarjous",
+                    "value": "Kiinteä tarjous"
+                  },
+                  {
+                    "name": "Followup",
+                    "value": "Followup"
+                  },
+                  {
+                    "name": "Keskustelu avoin",
+                    "value": "Keskustelu avoin"
+                  },
+                  {
+                    "name": "Varaus & Vahvistus",
+                    "value": "Varaus & Vahvistus"
+                  },
+                  {
+                    "name": "Muistutus varauksesta",
+                    "value": "Muistutus varauksesta"
+                  },
+                  {
+                    "name": "Varauksen muokkaaminen",
+                    "value": "Varauksen muokkaaminen"
+                  },
+                  {
+                    "name": "Hyväksytty",
+                    "value": "Hyväksytty"
+                  },
+                  {
+                    "name": "Hylätty",
+                    "value": "Hylätty"
+                  },
+                  {
+                    "name": "Ei voida toteuttaa (hylky + refund)",
+                    "value": "Ei voida toteuttaa (hylky + refund)"
+                  },
+                  {
+                    "name": "Maksettu ja hyväksytty",
+                    "value": "Maksettu ja hyväksytty"
+                  },
+                  {
+                    "name": "Varaa suorakuljetus",
+                    "value": "Varaa suorakuljetus"
+                  },
+                  {
+                    "name": "Reitityksessä",
+                    "value": "Reitityksessä"
+                  },
+                  {
+                    "name": "Reitityksessä, etsi toinen kyyti",
+                    "value": "Reitityksessä, etsi toinen kyyti"
+                  },
+                  {
+                    "name": "Nouto varattu",
+                    "value": "Nouto varattu"
+                  },
+                  {
+                    "name": "Varattu",
+                    "value": "Varattu"
+                  },
+                  {
+                    "name": "Aikataulutus",
+                    "value": "Aikataulutus"
+                  },
+                  {
+                    "name": "VARAA POSTI RAHTI",
+                    "value": "VARAA POSTI RAHTI"
+                  },
+                  {
+                    "name": "POIKKEAMA",
+                    "value": "POIKKEAMA"
+                  },
+                  {
+                    "name": "Hyväksytty (tuntihinta)",
+                    "value": "Hyväksytty (tuntihinta)"
+                  },
+                  {
+                    "name": "Asiakas ohjattu APP",
+                    "value": "Asiakas ohjattu APP"
+                  },
+                  {
+                    "name": "",
+                    "value": ""
+                  }
+                ],
+                "readOnly": false,
+                "removed": false
+              },
+              {
+                "id": "HOX!!",
+                "displayName": "HOX!!",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Tarjouslinkki",
+                "displayName": "Tarjouslinkki",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": true,
+                "removed": true
+              },
+              {
+                "id": "Team Notes",
+                "displayName": "Team Notes",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Toivottu päivämäärä",
+                "displayName": "Toivottu päivämäärä",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Service",
+                "displayName": "Service",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Bundle Price (VAT incl.)",
+                "displayName": "Bundle Price (VAT incl.)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "number",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Bundle Price (VAT 0)",
+                "displayName": "Bundle Price (VAT 0)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": true,
+                "removed": true
+              },
+              {
+                "id": "Tax 25,5% (Bundle)",
+                "displayName": "Tax 25,5% (Bundle)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": true,
+                "removed": true
+              },
+              {
+                "id": "Total Price (VAT incl.)",
+                "displayName": "Total Price (VAT incl.)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": true,
+                "removed": true
+              },
+              {
+                "id": "Goods to be transported",
+                "displayName": "Goods to be transported",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Total Price (VAT 0)",
+                "displayName": "Total Price (VAT 0)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": true,
+                "removed": true
+              },
+              {
+                "id": "Tax 25,5%",
+                "displayName": "Tax 25,5%",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": true,
+                "removed": true
+              },
+              {
+                "id": "Company",
+                "displayName": "Company",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Company ID",
+                "displayName": "Company ID",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Name",
+                "displayName": "Name",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Email",
+                "displayName": "Email",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Phone",
+                "displayName": "Phone",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Address (Pickup)",
+                "displayName": "Address (Pickup)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Apartment (Pickup)",
+                "displayName": "Apartment (Pickup)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Postcode (Pickup)",
+                "displayName": "Postcode (Pickup)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Size_m2 (Pickup)",
+                "displayName": "Size_m2 (Pickup)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Floor (Pickup)",
+                "displayName": "Floor (Pickup)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "number",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "lat (Pickup)",
+                "displayName": "lat (Pickup)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "number",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "lon (Pickup)",
+                "displayName": "lon (Pickup)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "number",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Elevator (Pickup)",
+                "displayName": "Elevator (Pickup)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Carrying (Pickup)",
+                "displayName": "Carrying (Pickup)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "number",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Info (Pickup)",
+                "displayName": "Info (Pickup)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Contact name (Pickup)",
+                "displayName": "Contact name (Pickup)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Phone (Pickup)",
+                "displayName": "Phone (Pickup)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Address (Delivery)",
+                "displayName": "Address (Delivery)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Apartment (Delivery)",
+                "displayName": "Apartment (Delivery)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Postcode (Delivery)",
+                "displayName": "Postcode (Delivery)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Size_m2 (Delivery)",
+                "displayName": "Size_m2 (Delivery)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Floor (Delivery)",
+                "displayName": "Floor (Delivery)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "number",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Elevator (Delivery)",
+                "displayName": "Elevator (Delivery)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Carrying (Delivery)",
+                "displayName": "Carrying (Delivery)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "number",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Info (Delivery)",
+                "displayName": "Info (Delivery)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Contact name (Delivery)",
+                "displayName": "Contact name (Delivery)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Phone (Delivery)",
+                "displayName": "Phone (Delivery)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "lat (Delivery)",
+                "displayName": "lat (Delivery)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "number",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "lon (Delivery)",
+                "displayName": "lon (Delivery)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "number",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Distance (km)",
+                "displayName": "Distance (km)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "number",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "itemsAccurate",
+                "displayName": "itemsAccurate",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "boolean",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Product page (URL)",
+                "displayName": "Product page (URL)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Picture",
+                "displayName": "Picture",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "array",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Last Mile Cost (VAT inlc.)",
+                "displayName": "Last Mile Cost (VAT inlc.)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "number",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Order Link",
+                "displayName": "Order Link",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "€/h",
+                "displayName": "€/h",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "boolean",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "€/h, Arvio keikan hinnasta copy",
+                "displayName": "€/h, Arvio keikan hinnasta copy",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "number",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "€/h, Hintahaitari",
+                "displayName": "€/h, Hintahaitari",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Tuntihinta",
+                "displayName": "Tuntihinta",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "number",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Perustelu",
+                "displayName": "Perustelu",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Kuljetusalusta",
+                "displayName": "Kuljetusalusta",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "options",
+                "options": [
+                  {
+                    "name": "Loose parcel",
+                    "value": "Loose parcel"
+                  },
+                  {
+                    "name": "Half pallet",
+                    "value": "Half pallet"
+                  },
+                  {
+                    "name": "Roll cage",
+                    "value": "Roll cage"
+                  },
+                  {
+                    "name": "EUR-pallet",
+                    "value": "EUR-pallet"
+                  },
+                  {
+                    "name": "FIN-pallet",
+                    "value": "FIN-pallet"
+                  },
+                  {
+                    "name": "Furniture pallet",
+                    "value": "Furniture pallet"
+                  },
+                  {
+                    "name": "FREIGHT NOT POSSIBLE",
+                    "value": "FREIGHT NOT POSSIBLE"
+                  }
+                ],
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Load Carrier Cost (VAT inlc.)",
+                "displayName": "Load Carrier Cost (VAT inlc.)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": true,
+                "removed": true
+              },
+              {
+                "id": "Packing Price (VAT inlc.)",
+                "displayName": "Packing Price (VAT inlc.)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": true,
+                "removed": true
+              },
+              {
+                "id": "Terminaali",
+                "displayName": "Terminaali",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "lat (Terminal)",
+                "displayName": "lat (Terminal)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "number",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "lon (Terminal)",
+                "displayName": "lon (Terminal)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "number",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Kuljetusvyöhyke",
+                "displayName": "Kuljetusvyöhyke",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "number",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Jakeluvyöhyke",
+                "displayName": "Jakeluvyöhyke",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "number",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Rahdin hinta (sis alv 25,5%)",
+                "displayName": "Rahdin hinta (sis alv 25,5%)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "number",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Jätemaksu (sis alv 25.5%)",
+                "displayName": "Jätemaksu (sis alv 25.5%)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "number",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Payment link",
+                "displayName": "Payment link",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Payment Method",
+                "displayName": "Payment Method",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "options",
+                "options": [
+                  {
+                    "name": "Verkkomaksu",
+                    "value": "Verkkomaksu"
+                  },
+                  {
+                    "name": "Verkkolasku",
+                    "value": "Verkkolasku"
+                  }
+                ],
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Verkkolaskuosoite",
+                "displayName": "Verkkolaskuosoite",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Operaattoritunnus",
+                "displayName": "Operaattoritunnus",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Payment Receipt",
+                "displayName": "Payment Receipt",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "array",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Last Modified",
+                "displayName": "Last Modified",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": true,
+                "removed": true
+              },
+              {
+                "id": "Address (Warehouse)",
+                "displayName": "Address (Warehouse)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Floor (Warehouse)",
+                "displayName": "Floor (Warehouse)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "number",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Elevator (Warehouse)",
+                "displayName": "Elevator (Warehouse)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Carrying (Warehouse)",
+                "displayName": "Carrying (Warehouse)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "number",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "lat (Warehouse)",
+                "displayName": "lat (Warehouse)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "number",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "lon (Warehouse)",
+                "displayName": "lon (Warehouse)",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "number",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "OrderId",
+                "displayName": "OrderId",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Proposed Pickup Window",
+                "displayName": "Proposed Pickup Window",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Customer Proposal Pickup Window",
+                "displayName": "Customer Proposal Pickup Window",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Confirmed Pickup Window",
+                "displayName": "Confirmed Pickup Window",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Proposed Delivery Window",
+                "displayName": "Proposed Delivery Window",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Customer Proposal Delivery Window",
+                "displayName": "Customer Proposal Delivery Window",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Confirmed Delivery Window",
+                "displayName": "Confirmed Delivery Window",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Schedule inquiry info",
+                "displayName": "Schedule inquiry info",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "gmail_thread_id",
+                "displayName": "gmail_thread_id",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "gmail_message_id",
+                "displayName": "gmail_message_id",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Aktiviteetin määräpäivä",
+                "displayName": "Aktiviteetin määräpäivä",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "dateTime",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Aktiviteetti",
+                "displayName": "Aktiviteetti",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Aktiviteetin kuvaus",
+                "displayName": "Aktiviteetin kuvaus",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": true
+              },
+              {
+                "id": "Maksettu?",
+                "displayName": "Maksettu?",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "boolean",
+                "readOnly": false,
+                "removed": false
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": false
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.airtable",
+        "typeVersion": 2.1,
+        "position": [
+          5168,
+          320
+        ],
+        "id": "041ac95b-1b1d-4ade-846c-5e22037c32e7",
+        "name": "Update record in Offers",
+        "credentials": {
+          "airtableTokenApi": {
+            "id": "NuIpe8hOcHLb3eZj",
+            "name": "Airtable Personal Access Token account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "base": {
+            "__rl": true,
+            "value": "appGkn53DdtjFGmWV",
+            "mode": "list",
+            "cachedResultName": "ApuCenter",
+            "cachedResultUrl": "https://airtable.com/appGkn53DdtjFGmWV"
+          },
+          "table": {
+            "__rl": true,
+            "value": "tbl20FO42hsfHDESX",
+            "mode": "list",
+            "cachedResultName": "Offers",
+            "cachedResultUrl": "https://airtable.com/appGkn53DdtjFGmWV/tbl20FO42hsfHDESX"
+          },
+          "id": "={{ $json.id }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.airtable",
+        "typeVersion": 2.1,
+        "position": [
+          5392,
+          320
+        ],
+        "id": "3cc987c0-86ad-4221-890e-c8a2c4187bfa",
+        "name": "Get a Record by ID",
+        "credentials": {
+          "airtableTokenApi": {
+            "id": "NuIpe8hOcHLb3eZj",
+            "name": "Airtable Personal Access Token account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.Palvelutaso }}",
+                      "rightValue": "budget",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      },
+                      "id": "b81f9866-a66f-4c5e-979c-9aa56deef611"
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "budget"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "id": "3c463618-e631-4f43-bbc7-df743a072cbc",
+                      "leftValue": "={{ $json.Palvelutaso }}",
+                      "rightValue": "normal",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "normal"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.4,
+        "position": [
+          5616,
+          320
+        ],
+        "id": "e395211a-8cad-4a2a-a4c3-6438886c77a9",
+        "name": "Switch"
+      },
+      {
+        "parameters": {
+          "jsCode": "// ============================================\n// ARVOT EDELLISISTÄ NODEISTA\n// ============================================\nconst stamp = $('Get a Record by ID').first().json.OfferID;\nconst human_now = new Date().toISOString();\nconst payment_method = $('Code in JavaScript1').first().json.query['checkout-provider'];\nconst buyer_name = $('Get a Record by ID').first().json.Name;\nconst buyer_email = $('Get a Record by ID').first().json.Email;\nconst buyer_phone = $('Get a Record by ID').first().json.Phone;\nconst address_pickup = $('Get a Record by ID').first().json['Address (Pickup)'];\nconst address_delivery = $('Get a Record by ID').first().json['Address (Delivery)'];\nconst subtotal_raw = $('Get a Record by ID').first().json['Total Price (VAT 0)'];\nconst vat_raw = $('Get a Record by ID').first().json['Tax 25,5%'];\nconst total_raw = $('Get a Record by ID').first().json['Total Price (VAT incl.)'];\nconst item_name = 'Kuljetus';\nconst item_qty = 1;\nconst item_unit_price = $('Get a Record by ID').first().json['Total Price (VAT 0)'];\nconst item_vat = $('Get a Record by ID').first().json['Tax 25,5%'];\nconst item_total = $('Get a Record by ID').first().json['Total Price (VAT incl.)'];\n\n// ============================================\n// APUFUNKTIOT – ÄLÄ MUOKKAA\n// ============================================\nconst esc = (s) => String(s ?? \"\").replace(/[&<>\"']/g, m =>\n  ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[m])\n);\n\nconst toNumber = (v) => {\n  const s = String(v ?? \"\").replace(\",\", \".\").replace(/[^\\d.-]/g, \"\");\n  const n = parseFloat(s);\n  return Number.isFinite(n) ? n : 0;\n};\n\nconst euro2 = (v) => `${toNumber(v).toFixed(2)} €`;\n\nconst fmtDate = (v) => {\n  try {\n    const d = new Date(v);\n    if (!isNaN(d.getTime())) {\n      const dd = String(d.getDate()).padStart(2, \"0\");\n      const mm = String(d.getMonth() + 1).padStart(2, \"0\");\n      const yyyy = d.getFullYear();\n      return `${dd}.${mm}.${yyyy}`;\n    }\n  } catch {}\n  const s = String(v ?? \"\").split(\" \")[0];\n  return s.replace(/\\//g, \".\").replace(/-/g, \".\");\n};\n\n// ============================================\n// MUOTOILUT\n// ============================================\nconst ISSUE_DATE_FMT = fmtDate(human_now);\nconst PAID_AT_FMT = fmtDate(human_now);\nconst RECEIPT_NUMBER = String(stamp ?? \"\");\nconst PAYMENT_METHOD = String(payment_method ?? \"\");\nconst CUSTOMER_NAME = String(buyer_name ?? \"\");\nconst CUSTOMER_EMAIL = String(buyer_email ?? \"\");\nconst CUSTOMER_PHONE = String(buyer_phone ?? \"\");\nconst ADDRESS_PICKUP = String(address_pickup ?? \"\");\nconst ADDRESS_DELIVERY = String(address_delivery ?? \"\");\nconst SUBTOTAL_EUR = euro2(subtotal_raw);\nconst VAT_EUR = euro2(vat_raw);\nconst TOTAL_EUR = euro2(total_raw);\n\n// ============================================\n// TUOTERIVIT\n// ============================================\nconst rows = `\n    <tr>\n      <td class=\"t-left\">${esc(item_name)}</td>\n      <td class=\"t-right\">${esc(item_qty)}</td>\n      <td class=\"t-right\">${euro2(item_unit_price)}</td>\n      <td class=\"t-right\">${euro2(item_vat)}</td>\n      <td class=\"t-right\">${euro2(item_total)}</td>\n    </tr>`;\n\n// ============================================\n// HTML\n// ============================================\nconst html = `<!doctype html>\n<html lang=\"fi\">\n<head>\n<meta charset=\"utf-8\">\n<title>Kuitti</title>\n<style>\n  @page { size: A4; margin: 12mm; }\n  html, body { height: auto; }\n  body { margin:0; background:#fff; color:#111827; font-family:Arial,Helvetica,sans-serif; font-size:12.5px; line-height:1.45; }\n  .wrap { max-width:185mm; margin:0 auto; }\n  .header { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; padding:6px 0 14px; border-bottom:2px solid #efefef; }\n  .brand { font-size:24px; font-weight:800; color:#de242d; }\n  .doc-meta { text-align:right; font-size:12px; }\n  .doc-meta b { color:#0f172a; }\n  .paid-badge { display:inline-block; margin-top:6px; padding:4px 10px; background:#de242d; color:#fff; font-weight:700; border-radius:6px; font-size:12px; }\n  h1 { margin:14px 0 10px; font-size:18px; color:#0f172a; }\n  h2 { margin:14px 0 6px; font-size:14px; color:#0f172a; }\n  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:6px; }\n  .card { border:1px solid #edeff2; border-radius:10px; padding:12px; background:#fff; }\n  table { width:100%; border-collapse:collapse; }\n  .items { margin-top:14px; border:1px solid #edeff2; border-radius:10px; overflow:hidden; table-layout: fixed; }\n  .items col.col-name { width: 46%; }\n  .items col.col-qty  { width: 12%; }\n  .items col.col-unit { width: 14%; }\n  .items col.col-vat  { width: 14%; }\n  .items col.col-tot  { width: 14%; }\n  .items thead th { background:#f7f7f9; color:#0f172a; font-weight:700; font-size:12px; padding:10px; border-bottom:1px solid #edeff2; }\n  .items thead th.t-left  { text-align:left; }\n  .items thead th.t-right { text-align:right; }\n  .items tbody td { padding:9px 10px; border-bottom:1px solid #f0f2f5; }\n  .items tbody td.t-left  { text-align:left; }\n  .items tbody td.t-right { text-align:right; white-space:nowrap; }\n  .totals { margin-top:10px; display:grid; grid-template-columns:1fr 200px; gap:12px; }\n  .totals .box { border:1px solid #edeff2; border-radius:10px; padding:10px; background:#fff; }\n  .totals td { padding:6px 0; }\n  .totals td:last-child { text-align:right; font-weight:600; }\n  .note { margin-top:10px; font-size:11px; color:#64748b; }\n  .header, .grid-2, .items, .totals, .card { page-break-inside: avoid; }\n</style>\n</head>\n<body>\n  <div class=\"wrap\">\n    <div class=\"header\">\n      <div class=\"brand\">Apukuski</div>\n      <div class=\"doc-meta\">\n        <div><b>KUITTI</b></div>\n        <div>Numero: <b>${esc(RECEIPT_NUMBER)}</b></div>\n        <div>Päivämäärä: <b>${esc(ISSUE_DATE_FMT)}</b></div>\n        <div>Maksettu: <b>${esc(PAID_AT_FMT)}</b></div>\n        <div>Maksutapa: <b>${esc(PAYMENT_METHOD)}</b></div>\n        <div class=\"paid-badge\">Maksettu ✅</div>\n      </div>\n    </div>\n    <h1>Kuitin tiedot</h1>\n    <div class=\"grid-2\">\n      <div class=\"card\">\n        <h2>Myyjä</h2>\n        <div><b>Apukuski Logistics</b></div>\n        <div>Åkerlundinkatu 8</div>\n        <div>33100 Tampere</div>\n        <div>044 774 7744</div>\n        <div>info@apukuski.com</div>\n        <div>Y-tunnus: 3130645-9</div>\n      </div>\n      <div class=\"card\">\n        <h2>Asiakas</h2>\n        <div><b>${esc(CUSTOMER_NAME)}</b></div>\n        <div>${esc(CUSTOMER_EMAIL)}</div>\n        <div>${esc(CUSTOMER_PHONE)}</div>\n      </div>\n    </div>\n    <div class=\"card\" style=\"margin-top:12px;\">\n      <b>Kuljetus:</b> ${esc(ADDRESS_PICKUP)} → ${esc(ADDRESS_DELIVERY)}\n    </div>\n    <table class=\"items\">\n      <colgroup>\n        <col class=\"col-name\" />\n        <col class=\"col-qty\" />\n        <col class=\"col-unit\" />\n        <col class=\"col-vat\" />\n        <col class=\"col-tot\" />\n      </colgroup>\n      <thead>\n        <tr>\n          <th class=\"t-left\">Tuote / Palvelu</th>\n          <th class=\"t-right\">Määrä</th>\n          <th class=\"t-right\">Yks. hinta</th>\n          <th class=\"t-right\">ALV</th>\n          <th class=\"t-right\">Yhteensä</th>\n        </tr>\n      </thead>\n      <tbody>\n        ${rows}\n      </tbody>\n    </table>\n    <div class=\"totals\">\n      <div class=\"box\">\n        <div><b>Lisätiedot</b></div>\n        Kuljetus: ${esc(ADDRESS_PICKUP)} → ${esc(ADDRESS_DELIVERY)}\n      </div>\n      <div class=\"box\">\n        <table>\n          <tr><td>Välisumma</td><td style=\"text-align:right;\">${esc(SUBTOTAL_EUR)}</td></tr>\n          <tr><td>ALV 25,5%</td><td style=\"text-align:right;\">${esc(VAT_EUR)}</td></tr>\n          <tr><td><b>Yhteensä</b></td><td style=\"text-align:right;\"><b>${esc(TOTAL_EUR)}</b></td></tr>\n        </table>\n      </div>\n    </div>\n    <div class=\"note\">\n      Tämä on koneellisesti tuotettu kuitti. Säilytä tositteena kirjanpitoa varten.\n    </div>\n  </div>\n</body>\n</html>`;\n\nreturn [{\n    json: {\n        html: html\n    }\n}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          5840,
+          416
+        ],
+        "id": "97ffeb50-0ad7-4f93-88ff-6a74c846050e",
+        "name": "Generate offer HTML (normal)"
+      },
+      {
+        "parameters": {
+          "operation": "URL/HTML to PDF",
+          "convertType": "htmlToPDF",
+          "html": "={{ $json.html }}",
+          "advancedOptions": {}
+        },
+        "type": "n8n-nodes-pdfco.PDFco Api",
+        "typeVersion": 1,
+        "position": [
+          6064,
+          416
+        ],
+        "id": "0f70b77b-420b-4be7-8684-5af4cbf0c4d5",
+        "name": "PDFco Api",
+        "credentials": {
+          "pdfcoApi": {
+            "id": "FcVZXcHXlKANxPAA",
+            "name": "PDF.co account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// ============================================\n// ARVOT EDELLISISTÄ NODEISTA\n// ============================================\nconst stamp = $input.first().json.OfferID;\nconst human_now = new Date().toISOString();\nconst payment_method = $('Code in JavaScript1').first().json.query['checkout-provider'];\nconst buyer_name = $('Get a Record by ID').first().json.Name;\nconst buyer_email = $('Get a Record by ID').first().json.Email;\nconst buyer_phone = $('Get a Record by ID').first().json.Phone;\nconst address_pickup = $('Get a Record by ID').first().json['Address (Pickup)'];\nconst address_delivery = $('Get a Record by ID').first().json['Address (Delivery)'];\nconst subtotal_raw = $input.first().json['Bundle Price (VAT 0)'];\nconst vat_raw = $input.first().json['Tax 25,5% (Bundle)'];\nconst total_raw = $input.first().json['Bundle Price (VAT incl.)'];\nconst item_name = 'Kuljetus';\nconst item_qty = 1;\nconst item_unit_price = $input.first().json['Bundle Price (VAT 0)'];\nconst item_vat = $input.first().json['Tax 25,5% (Bundle)'];\nconst item_total = $input.first().json['Bundle Price (VAT incl.)'];\n\n// ============================================\n// APUFUNKTIOT – ÄLÄ MUOKKAA\n// ============================================\nconst esc = (s) => String(s ?? \"\").replace(/[&<>\"']/g, m =>\n  ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[m])\n);\n\nconst toNumber = (v) => {\n  const s = String(v ?? \"\").replace(\",\", \".\").replace(/[^\\d.-]/g, \"\");\n  const n = parseFloat(s);\n  return Number.isFinite(n) ? n : 0;\n};\n\nconst euro2 = (v) => `${toNumber(v).toFixed(2)} €`;\n\nconst fmtDate = (v) => {\n  try {\n    const d = new Date(v);\n    if (!isNaN(d.getTime())) {\n      const dd = String(d.getDate()).padStart(2, \"0\");\n      const mm = String(d.getMonth() + 1).padStart(2, \"0\");\n      const yyyy = d.getFullYear();\n      return `${dd}.${mm}.${yyyy}`;\n    }\n  } catch {}\n  const s = String(v ?? \"\").split(\" \")[0];\n  return s.replace(/\\//g, \".\").replace(/-/g, \".\");\n};\n\n// ============================================\n// MUOTOILUT\n// ============================================\nconst ISSUE_DATE_FMT = fmtDate(human_now);\nconst PAID_AT_FMT = fmtDate(human_now);\nconst RECEIPT_NUMBER = String(stamp ?? \"\");\nconst PAYMENT_METHOD = String(payment_method ?? \"\");\nconst CUSTOMER_NAME = String(buyer_name ?? \"\");\nconst CUSTOMER_EMAIL = String(buyer_email ?? \"\");\nconst CUSTOMER_PHONE = String(buyer_phone ?? \"\");\nconst ADDRESS_PICKUP = String(address_pickup ?? \"\");\nconst ADDRESS_DELIVERY = String(address_delivery ?? \"\");\nconst SUBTOTAL_EUR = euro2(subtotal_raw);\nconst VAT_EUR = euro2(vat_raw);\nconst TOTAL_EUR = euro2(total_raw);\n\n// ============================================\n// TUOTERIVIT\n// ============================================\nconst rows = `\n    <tr>\n      <td class=\"t-left\">${esc(item_name)}</td>\n      <td class=\"t-right\">${esc(item_qty)}</td>\n      <td class=\"t-right\">${euro2(item_unit_price)}</td>\n      <td class=\"t-right\">${euro2(item_vat)}</td>\n      <td class=\"t-right\">${euro2(item_total)}</td>\n    </tr>`;\n\n// ============================================\n// HTML\n// ============================================\nconst html = `<!doctype html>\n<html lang=\"fi\">\n<head>\n<meta charset=\"utf-8\">\n<title>Kuitti</title>\n<style>\n  @page { size: A4; margin: 12mm; }\n  html, body { height: auto; }\n  body { margin:0; background:#fff; color:#111827; font-family:Arial,Helvetica,sans-serif; font-size:12.5px; line-height:1.45; }\n  .wrap { max-width:185mm; margin:0 auto; }\n  .header { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; padding:6px 0 14px; border-bottom:2px solid #efefef; }\n  .brand { font-size:24px; font-weight:800; color:#de242d; }\n  .doc-meta { text-align:right; font-size:12px; }\n  .doc-meta b { color:#0f172a; }\n  .paid-badge { display:inline-block; margin-top:6px; padding:4px 10px; background:#de242d; color:#fff; font-weight:700; border-radius:6px; font-size:12px; }\n  h1 { margin:14px 0 10px; font-size:18px; color:#0f172a; }\n  h2 { margin:14px 0 6px; font-size:14px; color:#0f172a; }\n  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:6px; }\n  .card { border:1px solid #edeff2; border-radius:10px; padding:12px; background:#fff; }\n  table { width:100%; border-collapse:collapse; }\n  .items { margin-top:14px; border:1px solid #edeff2; border-radius:10px; overflow:hidden; table-layout: fixed; }\n  .items col.col-name { width: 46%; }\n  .items col.col-qty  { width: 12%; }\n  .items col.col-unit { width: 14%; }\n  .items col.col-vat  { width: 14%; }\n  .items col.col-tot  { width: 14%; }\n  .items thead th { background:#f7f7f9; color:#0f172a; font-weight:700; font-size:12px; padding:10px; border-bottom:1px solid #edeff2; }\n  .items thead th.t-left  { text-align:left; }\n  .items thead th.t-right { text-align:right; }\n  .items tbody td { padding:9px 10px; border-bottom:1px solid #f0f2f5; }\n  .items tbody td.t-left  { text-align:left; }\n  .items tbody td.t-right { text-align:right; white-space:nowrap; }\n  .totals { margin-top:10px; display:grid; grid-template-columns:1fr 200px; gap:12px; }\n  .totals .box { border:1px solid #edeff2; border-radius:10px; padding:10px; background:#fff; }\n  .totals td { padding:6px 0; }\n  .totals td:last-child { text-align:right; font-weight:600; }\n  .note { margin-top:10px; font-size:11px; color:#64748b; }\n  .header, .grid-2, .items, .totals, .card { page-break-inside: avoid; }\n</style>\n</head>\n<body>\n  <div class=\"wrap\">\n    <div class=\"header\">\n      <div class=\"brand\">Apukuski</div>\n      <div class=\"doc-meta\">\n        <div><b>KUITTI</b></div>\n        <div>Numero: <b>${esc(RECEIPT_NUMBER)}</b></div>\n        <div>Päivämäärä: <b>${esc(ISSUE_DATE_FMT)}</b></div>\n        <div>Maksettu: <b>${esc(PAID_AT_FMT)}</b></div>\n        <div>Maksutapa: <b>${esc(PAYMENT_METHOD)}</b></div>\n        <div class=\"paid-badge\">Maksettu ✅</div>\n      </div>\n    </div>\n    <h1>Kuitin tiedot</h1>\n    <div class=\"grid-2\">\n      <div class=\"card\">\n        <h2>Myyjä</h2>\n        <div><b>Apukuski Logistics</b></div>\n        <div>Åkerlundinkatu 8</div>\n        <div>33100 Tampere</div>\n        <div>044 774 7744</div>\n        <div>info@apukuski.com</div>\n        <div>Y-tunnus: 3130645-9</div>\n      </div>\n      <div class=\"card\">\n        <h2>Asiakas</h2>\n        <div><b>${esc(CUSTOMER_NAME)}</b></div>\n        <div>${esc(CUSTOMER_EMAIL)}</div>\n        <div>${esc(CUSTOMER_PHONE)}</div>\n      </div>\n    </div>\n    <div class=\"card\" style=\"margin-top:12px;\">\n      <b>Kuljetus:</b> ${esc(ADDRESS_PICKUP)} → ${esc(ADDRESS_DELIVERY)}\n    </div>\n    <table class=\"items\">\n      <colgroup>\n        <col class=\"col-name\" />\n        <col class=\"col-qty\" />\n        <col class=\"col-unit\" />\n        <col class=\"col-vat\" />\n        <col class=\"col-tot\" />\n      </colgroup>\n      <thead>\n        <tr>\n          <th class=\"t-left\">Tuote / Palvelu</th>\n          <th class=\"t-right\">Määrä</th>\n          <th class=\"t-right\">Yks. hinta</th>\n          <th class=\"t-right\">ALV</th>\n          <th class=\"t-right\">Yhteensä</th>\n        </tr>\n      </thead>\n      <tbody>\n        ${rows}\n      </tbody>\n    </table>\n    <div class=\"totals\">\n      <div class=\"box\">\n        <div><b>Lisätiedot</b></div>\n        Kuljetus: ${esc(ADDRESS_PICKUP)} → ${esc(ADDRESS_DELIVERY)}\n      </div>\n      <div class=\"box\">\n        <table>\n          <tr><td>Välisumma</td><td style=\"text-align:right;\">${esc(SUBTOTAL_EUR)}</td></tr>\n          <tr><td>ALV 25,5%</td><td style=\"text-align:right;\">${esc(VAT_EUR)}</td></tr>\n          <tr><td><b>Yhteensä</b></td><td style=\"text-align:right;\"><b>${esc(TOTAL_EUR)}</b></td></tr>\n        </table>\n      </div>\n    </div>\n    <div class=\"note\">\n      Tämä on koneellisesti tuotettu kuitti. Säilytä tositteena kirjanpitoa varten.\n    </div>\n  </div>\n</body>\n</html>`;\n\nreturn [{\n    json: {\n        html: html\n    }\n}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          5840,
+          224
+        ],
+        "id": "9d67fa86-07ac-4701-986c-2857b9ee95b6",
+        "name": "Generate offer HTML (normal)1"
+      },
+      {
+        "parameters": {
+          "operation": "URL/HTML to PDF",
+          "convertType": "htmlToPDF",
+          "html": "={{ $json.html }}",
+          "advancedOptions": {}
+        },
+        "type": "n8n-nodes-pdfco.PDFco Api",
+        "typeVersion": 1,
+        "position": [
+          6064,
+          224
+        ],
+        "id": "4eee3606-807c-422f-9495-ed71dcfa8fb9",
+        "name": "PDFco Api1",
+        "credentials": {
+          "pdfcoApi": {
+            "id": "FcVZXcHXlKANxPAA",
+            "name": "PDF.co account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $('Get a Record by ID').item.json.Email }}",
+          "subject": "Tilausvahvistus ja kuitti",
+          "message": "=<div style=\"font-family: Arial, sans-serif; color: #333; line-height: 1.6; font-size: 16px; max-width: 640px; margin: 0 auto;\">\n\n  <p>Hei!</p>\n\n  <p>\n    Kiitos tilauksesta! Olemme sinuun yhteydessä mahdollisimman pian kuljetuksen aikatauluista. 😊\n  </p>\n\n  <p><b>Löydät kuitin maksutapahtumasta tämän viestin liitteistä.</b></p>\n\n  <p>\n    Tilauksesi on kirjautunut järjestelmäämme seuraavilla tiedoilla:\n  </p>\n\n  <div style=\"margin: 14px 0 20px; padding: 14px 16px; background: #f7f7f7; border-radius: 8px; border: 1px solid #ddd;\">\n    <p><b>Palvelu:</b> Kuljetus</p>\n    <p><b>Hinta:</b> {{ $('Get a Record by ID').item.json['Total Price (VAT incl.)'] }}€ (sis. alv 25,5%)</p>\n    <p><b>Aikataulut:</b> Tarjouksen mukaisesti. </p>\n\n    <p><b>Nouto-osoite:</b><br>\n    {{ $('Get a Record by ID').item.json['Address (Pickup)'] }}</p>\n\n    <p><b>Toimitusosoite:</b><br>\n    {{ $('Get a Record by ID').item.json['Address (Delivery)'] }}</p>\n\n    <p><b>Kuljetettavat tavarat:</b> Tarjouksen mukaisesti. </p>\n  </div>\n\n  <p><b>Tarvitsetko apua?</b><br>\n  Tilaukseen liittyvissä asioissa, otathan yhteyttä asiakaspalveluumme.</p>\n\n  <p>\n    Puhelin: 044 774 7744<br>\n    Sähköposti: info@apukuski.com\n  </p>\n\n  <p><b>Tilauksen peruuttaminen</b><br>\n  Voit peruuttaa tilauksen viimeistään yksi (1) arkipäivä ennen kuin työn on määrä alkaa.</p>\n\n  <p style=\"margin-top: 25px;\">\n    Ystävällisin terveisin,<br>\n    <b>Apukuskit</b><br>\n    <a href=\"https://apukuski.com\" style=\"color: #0d6efd; text-decoration: none;\">apukuski.com</a>\n  </p>\n\n</div>\n",
+          "options": {
+            "appendAttribution": false,
+            "attachmentsUi": {
+              "attachmentsBinary": [
+                {}
+              ]
+            }
+          }
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          6736,
+          416
+        ],
+        "id": "464ccb19-3346-4aae-8a88-d239ca9cf4b7",
+        "name": "Send a message (normal)",
+        "webhookId": "f6331425-cc1a-43a0-ac7d-fd0190196476",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JFmJyfbEKW965FhO",
+            "name": "Gmail account (info)"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $('Get a Record by ID').item.json.Email }}",
+          "subject": "Tilausvahvistus ja kuitti",
+          "message": "=<div style=\"font-family: Arial, sans-serif; color: #333; line-height: 1.6; font-size: 16px; max-width: 640px; margin: 0 auto;\">\n\n  <p>Hei!</p>\n\n  <p>\n    Kiitos tilauksesta! Olemme sinuun yhteydessä mahdollisimman pian kuljetuksen aikatauluista. 😊\n  </p>\n\n  <p><b>Löydät kuitin maksutapahtumasta tämän viestin liitteistä.</b></p>\n\n  <p>\n    Tilauksesi on kirjautunut järjestelmäämme seuraavilla tiedoilla:\n  </p>\n\n  <div style=\"margin: 14px 0 20px; padding: 14px 16px; background: #f7f7f7; border-radius: 8px; border: 1px solid #ddd;\">\n    <p><b>Palvelu:</b> Kuljetus</p>\n    <p><b>Hinta:</b> {{ $('Get a Record by ID').item.json['Bundle Price (VAT incl.)'] }}€ (sis. alv 25,5%)</p>\n    <p><b>Aikataulut:</b> Tarjouksen mukaisesti.</p>\n\n    <p><b>Nouto-osoite:</b><br>\n   {{ $('Get a Record by ID').item.json['Address (Pickup)'] }}</p>\n\n    <p><b>Toimitusosoite:</b><br>\n    {{ $('Get a Record by ID').item.json['Address (Delivery)'] }}</p>\n\n    <p><b>Kuljetettavat tavarat:</b> Tarjouksen mukaisesti. </p>\n  </div>\n\n  <p><b>Tarvitsetko apua?</b><br>\n  Tilaukseen liittyvissä asioissa, otathan yhteyttä asiakaspalveluumme.</p>\n\n  <p>\n    Puhelin: 044 774 7744<br>\n    Sähköposti: info@apukuski.com\n  </p>\n\n  <p><b>Tilauksen peruuttaminen</b><br>\n  Voit peruuttaa tilauksen viimeistään yksi (1) arkipäivä ennen kuin työn on määrä alkaa.</p>\n\n  <p style=\"margin-top: 25px;\">\n    Ystävällisin terveisin,<br>\n    <b>Apukuskit</b><br>\n    <a href=\"https://apukuski.com\" style=\"color: #0d6efd; text-decoration: none;\">apukuski.com</a>\n  </p>\n\n</div>",
+          "options": {
+            "appendAttribution": false,
+            "attachmentsUi": {
+              "attachmentsBinary": [
+                {}
+              ]
+            },
+            "senderName": "Apukuski"
+          }
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          6736,
+          224
+        ],
+        "id": "e725b870-be67-4c1d-b972-9870a3375fe9",
+        "name": "Send a message (budget)",
+        "webhookId": "f6331425-cc1a-43a0-ac7d-fd0190196476",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JFmJyfbEKW965FhO",
+            "name": "Gmail account (info)"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const items = $input.all();\nfor (const item of items) {\n    if (item.binary && item.binary.data) {\n        item.binary.data.fileName = 'Apukuski-Kuitti.pdf';\n    }\n}\nreturn items;"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          6512,
+          224
+        ],
+        "id": "a6e0928d-fe35-49ca-9b38-7a4b6b3549fa",
+        "name": "Tiedoston nimeäminen"
+      },
+      {
+        "parameters": {
+          "url": "={{ $json.url }}",
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "file"
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          6288,
+          224
+        ],
+        "id": "3834e4e7-ecb3-4b7d-8da6-8b24f18f342d",
+        "name": "PDF lataus",
+        "notesInFlow": false
+      },
+      {
+        "parameters": {
+          "url": "={{ $json.url }}",
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "file"
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          6288,
+          416
+        ],
+        "id": "e754d4aa-a766-40bc-9f25-f2a4e99f373d",
+        "name": "PDF lataus1",
+        "notesInFlow": false
+      },
+      {
+        "parameters": {
+          "jsCode": "const items = $input.all();\nfor (const item of items) {\n    if (item.binary && item.binary.data) {\n        item.binary.data.fileName = 'Apukuski-Kuitti.pdf';\n    }\n}\nreturn items;"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          6512,
+          416
+        ],
+        "id": "6c528ce7-fb3c-4e36-a968-ccbd696abc10",
+        "name": "Tiedoston nimeäminen1"
+      },
+      {
+        "parameters": {
+          "jsCode": "return [{\n    json: {\n        headers: {\n            \"host\": \"apukuski.app.n8n.cloud\",\n            \"user-agent\": \"Paytrail Payment Registration\",\n            \"accept-encoding\": \"gzip, br\",\n            \"cdn-loop\": \"cloudflare; loops=1; subreqs=1\",\n            \"cf-connecting-ip\": \"52.57.195.236\",\n            \"cf-ew-via\": \"15\",\n            \"cf-ipcountry\": \"DE\",\n            \"cf-ray\": \"9d632a947d299f54-FRA\",\n            \"cf-visitor\": \"{\\\"scheme\\\":\\\"https\\\"}\",\n            \"cf-worker\": \"n8n.cloud\",\n            \"request-id\": \"f2fc5057-92e9-4648-bcc3-8268b1bec7cd\",\n            \"x-forwarded-for\": \"52.57.195.236, 172.68.193.187\",\n            \"x-forwarded-host\": \"apukuski.app.n8n.cloud\",\n            \"x-forwarded-port\": \"443\",\n            \"x-forwarded-proto\": \"https\",\n            \"x-forwarded-server\": \"traefik-prod-users-gwc-87-6ff77fb585-g225z\",\n            \"x-is-trusted\": \"yes\",\n            \"x-real-ip\": \"52.57.195.236\"\n        },\n        params: {},\n        query: {\n            \"checkout-account\": \"1102667\",\n            \"checkout-algorithm\": \"sha256\",\n            \"checkout-amount\": \"1\",\n            \"checkout-stamp\": \"01046-1772483417614\",\n            \"checkout-reference\": \"01275\",\n            \"checkout-status\": \"ok\",\n            \"checkout-provider\": \"osuuspankki\",\n            \"checkout-transaction-id\": \"6065c342-9932-4614-9912-5cdb25be9537\",\n            \"signature\": \"3cfa5fe46a633d643716959aa838ed02f7366bc88c75a971136907d9d983b366\"\n        },\n        body: {},\n        webhookUrl: \"https://apukuski.app.n8n.cloud/webhook/39574924-47a4-434f-bdb6-dfb4c2986758\",\n        executionMode: \"production\"\n    }\n}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          4496,
+          224
+        ],
+        "id": "c4c513d6-336e-4ace-8132-1abfcff73a1c",
+        "name": "Code in JavaScript"
+      },
+      {
+        "parameters": {},
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 3.2,
+        "position": [
+          6960,
+          320
+        ],
+        "id": "a6d65d06-8d6c-431d-bed6-fc4b208bcb41",
+        "name": "Merge"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://u6bcjeuot2.execute-api.eu-central-1.amazonaws.com/production/register",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n      \"firstName\": \"{{ $('Pilko nimi').item.json.firstName }}\",\n      \"lastName\": \"{{ $('Pilko nimi').item.json.lastName }}\",\n      \"email\": \"{{ $json.Email }}\",\n      \"phoneNumber\": \"{{ $json.Phone }}\"\n}",
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          7632,
+          320
+        ],
+        "id": "d3147b4c-fbb3-46c6-833c-c267a227cb6e",
+        "name": "Luo käyttäjä order appiin"
+      },
+      {
+        "parameters": {
+          "base": {
+            "__rl": true,
+            "value": "appGkn53DdtjFGmWV",
+            "mode": "list",
+            "cachedResultName": "ApuCenter",
+            "cachedResultUrl": "https://airtable.com/appGkn53DdtjFGmWV"
+          },
+          "table": {
+            "__rl": true,
+            "value": "tbl20FO42hsfHDESX",
+            "mode": "list",
+            "cachedResultName": "Offers",
+            "cachedResultUrl": "https://airtable.com/appGkn53DdtjFGmWV/tbl20FO42hsfHDESX"
+          },
+          "id": "={{ $('Get a Record by ID').item.json.id }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.airtable",
+        "typeVersion": 2.1,
+        "position": [
+          7184,
+          320
+        ],
+        "id": "036146c6-1697-45db-a4a8-63e5888be4d6",
+        "name": "Päivitetyt tilaustiedot",
+        "credentials": {
+          "airtableTokenApi": {
+            "id": "NuIpe8hOcHLb3eZj",
+            "name": "Airtable Personal Access Token account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const name = $input.first().json.Name;\n\nconst names = name.split(' ');\nconst firstName = names[0];\nconst lastName = names.slice(1).join(' ') || '';\n\nreturn [{ json: { ...$input.first().json, firstName: firstName, lastName: lastName } }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          7408,
+          320
+        ],
+        "id": "a8311a11-1f4e-4311-a7b4-4226d8d0b0d3",
+        "name": "Pilko nimi"
+      },
+      {
+        "parameters": {
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.error }}",
+                      "rightValue": "User already exists",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      },
+                      "id": "adde06d8-8a4f-485e-a1e2-6c0ad1097801"
+                    }
+                  ],
+                  "combinator": "and"
+                }
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "id": "b54a48b4-4592-4c9a-aca6-3a3ad6d2660e",
+                      "leftValue": "={{ $json.userId }}",
+                      "rightValue": "",
+                      "operator": {
+                        "type": "string",
+                        "operation": "exists",
+                        "singleValue": true
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                }
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.4,
+        "position": [
+          7856,
+          320
+        ],
+        "id": "ca595ef7-3180-4d5a-862b-6084d1320911",
+        "name": "Switch1"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://qtml5qv6uk.execute-api.eu-central-1.amazonaws.com/production/order/import",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "x-api-key",
+                "value": "oz6Dcgxn5k3px6a3fN9NU5YHshMuYpxP4NNyMdi4"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ (() => {\n    const rec = $('Päivitetyt tilaustiedot').item.json;\n    const userId = $json.userId || $('Luo käyttäjä order appiin').item.json.userId;\n    const provider = $('Code in JavaScript1').item.json.query['checkout-provider'] || '';\n\n    const toCents = v => Math.round(parseFloat(String(v ?? '0').replace(',', '.').replace(/[^\\d.-]/g, '')) * 100);\n    const toInt = v => { const n = parseInt(v, 10); return Number.isFinite(n) ? n : 0; };\n    const isElev = v => ['kyllä','yes','true','1','on'].includes(String(v ?? '').trim().toLowerCase());\n\n    const isBudget = rec.Palvelutaso === 'budget';\n    const vatIncl = isBudget ? rec['Bundle Price (VAT incl.)'] : rec['Total Price (VAT incl.)'];\n    const vat0    = isBudget ? rec['Bundle Price (VAT 0)']    : rec['Total Price (VAT 0)'];\n    const vatPriceCents  = toCents(vatIncl);\n    const basePriceCents = toCents(vat0);\n\n    const goods = rec['Goods to be transported'] || 'Kuljetettavat tavarat';\n\n    return JSON.stringify({\n      userId,\n      orderType: { fi: 'Kuljetus', en: 'Transportation' },\n      content: [{\n        id: '99',\n        count: '1',\n        title: { fi: goods, en: goods },\n        itemDimensions: { volume: '0', weight: '0' }\n      }],\n      stops: [\n        {\n          address: rec['Address (Pickup)'] || '',\n          apartment: rec['Apartment (Pickup)'] || '',\n          location: { latitude: String(rec['lat (Pickup)'] ?? '0'), longitude: String(rec['lon (Pickup)'] ?? '0') },\n          carryingNeeds: {\n            carrierCount: toInt(rec['Carrying (Pickup)']) || 1,\n            floors: { floor: toInt(rec['Floor (Pickup)']), elevatorInUse: isElev(rec['Elevator (Pickup)']) }\n          },\n          contactInfo: {\n            name: rec['Contact name (Pickup)'] || rec.Name || '',\n            phoneNumber: rec['Phone (Pickup)'] || rec.Phone || ''\n          },\n          information: rec['Info (Pickup)'] || ''\n        },\n        {\n          address: rec['Address (Delivery)'] || '',\n          apartment: rec['Apartment (Delivery)'] || '',\n          location: { latitude: String(rec['lat (Delivery)'] ?? '0'), longitude: String(rec['lon (Delivery)'] ?? '0') },\n          carryingNeeds: {\n            carrierCount: toInt(rec['Carrying (Delivery)']) || 1,\n            floors: { floor: toInt(rec['Floor (Delivery)']), elevatorInUse: isElev(rec['Elevator (Delivery)']) }\n          },\n          contactInfo: {\n            name: rec['Contact name (Delivery)'] || rec.Name || '',\n            phoneNumber: rec['Phone (Delivery)'] || rec.Phone || ''\n          },\n          information: rec['Info (Delivery)'] || ''\n        }\n      ],\n      charge: {\n        basePrice: basePriceCents,\n        vatPrice: vatPriceCents,\n        vatPercentage: '25.5',\n        serviceFee: 0,\n        servicesPrice: 0,\n        platformFee: 0,\n        hubDrivePrice: 0,\n        workPrice: 0\n      },\n      amountPaid: vatPriceCents,\n      paymentMethod: provider,\n      origin: rec.source || 'n8n-offer'\n    });\n  })() }}\n",
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            }
+          }
+        },
+        "id": "ff85c0fd-9dc8-4aef-9504-3aedb83c307f",
+        "name": "Luo Schedule Later tilaus order appiin",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          8688,
+          336
+        ]
+      },
+      {
+        "parameters": {
+          "url": "https://qtml5qv6uk.execute-api.eu-central-1.amazonaws.com/production/customer",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "q",
+                "value": "={{ $('Päivitetyt tilaustiedot').item.json.Email }}"
+              }
+            ]
+          },
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "x-api-key",
+                "value": "oz6Dcgxn5k3px6a3fN9NU5YHshMuYpxP4NNyMdi4"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            }
+          }
+        },
+        "id": "24a13754-7982-4486-bd1b-75ae85cc18d5",
+        "name": "Hae olemassaoleva asiakas sähköpostilla",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          8112,
+          144
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const email = ($('Päivitetyt tilaustiedot').item.json.Email || '').toLowerCase().trim();\n  const body = $input.first().json;\n  const list = Array.isArray(body) ? body : (Array.isArray(body?.data) ? body.data : []);\n\n  const hit = list.find(c => (c.email || '').toLowerCase().trim() === email);\n  if (!hit || !hit.userId) {\n    throw new Error(`No existing customer found for email ${email}. Search returned ${list.length} rows.`);\n  }\n  return [{ json: { userId: hit.userId, email: hit.email } }];"
+        },
+        "id": "9da4f429-124f-4b31-b97d-e3da99bb0124",
+        "name": "Extract matching userId",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          8400,
+          144
+        ]
+      }
+    ],
+    "connections": {
+      "When clicking ‘Execute workflow’": {
+        "main": [
+          [
+            {
+              "node": "Code in JavaScript",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Code in JavaScript1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code in JavaScript1": {
+        "main": [
+          [
+            {
+              "node": "If",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "If": {
+        "main": [
+          [
+            {
+              "node": "Update record in Offers",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Update record in Offers": {
+        "main": [
+          [
+            {
+              "node": "Get a Record by ID",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get a Record by ID": {
+        "main": [
+          [
+            {
+              "node": "Switch",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Switch": {
+        "main": [
+          [
+            {
+              "node": "Generate offer HTML (normal)1",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Generate offer HTML (normal)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Generate offer HTML (normal)": {
+        "main": [
+          [
+            {
+              "node": "PDFco Api",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Generate offer HTML (normal)1": {
+        "main": [
+          [
+            {
+              "node": "PDFco Api1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "PDFco Api": {
+        "main": [
+          [
+            {
+              "node": "PDF lataus1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "PDFco Api1": {
+        "main": [
+          [
+            {
+              "node": "PDF lataus",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tiedoston nimeäminen": {
+        "main": [
+          [
+            {
+              "node": "Send a message (budget)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "PDF lataus": {
+        "main": [
+          [
+            {
+              "node": "Tiedoston nimeäminen",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "PDF lataus1": {
+        "main": [
+          [
+            {
+              "node": "Tiedoston nimeäminen1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tiedoston nimeäminen1": {
+        "main": [
+          [
+            {
+              "node": "Send a message (normal)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Send a message (budget)": {
+        "main": [
+          [
+            {
+              "node": "Merge",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Send a message (normal)": {
+        "main": [
+          [
+            {
+              "node": "Merge",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Code in JavaScript": {
+        "main": [
+          [
+            {
+              "node": "Code in JavaScript1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Merge": {
+        "main": [
+          [
+            {
+              "node": "Päivitetyt tilaustiedot",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Luo käyttäjä order appiin": {
+        "main": [
+          [
+            {
+              "node": "Switch1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Päivitetyt tilaustiedot": {
+        "main": [
+          [
+            {
+              "node": "Pilko nimi",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hae olemassaoleva asiakas sähköpostilla": {
+        "main": [
+          [
+            {
+              "node": "Extract matching userId",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Pilko nimi": {
+        "main": [
+          [
+            {
+              "node": "Luo käyttäjä order appiin",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Switch1": {
+        "main": [
+          [
+            {
+              "node": "Hae olemassaoleva asiakas sähköpostilla",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Luo Schedule Later tilaus order appiin",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Extract matching userId": {
+        "main": [
+          [
+            {
+              "node": "Luo Schedule Later tilaus order appiin",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Joonas Mykkänen",
+    "name": null,
+    "description": null
+  }
+}
