@@ -540,6 +540,18 @@ spec and rationale: the original task message, not duplicated here.
       landed with real `order_id`s and fee data. No historical backfill script yet — the
       30-day rolling window covers what exists so far; add one if data older than 30 days
       before 2026-08-12 is ever needed.
+- [x] **Discount/promo-code tracking added 2026-08-12** — the BI chatbot flagged that
+      `payments_stripe` couldn't compute `upsell_discount_used` without one.
+      `supabase/migrations/009_add_stripe_discount_fields.sql`:
+      `discount_coupon_code`/`discount_percent_off`/`discount_amount_off_cents`/
+      `discount_applied_cents` (primary case, directly filterable) + `discounts` JSONB (full
+      detail, multi-discount edge case). Confirmed live: `session.discounts` only gives an
+      opaque `promotion_code` object ID, not the human-readable code — that requires
+      `expand[]=total_details.breakdown` too, confirmed it works alongside the existing
+      `payment_intent` expand in the same request, no extra API call. Verified against real
+      data: 5 of 100 sampled live sessions had a real discount (`TESTAA10` 10%, `4Y28MKz7`
+      20%, `Emjk8BsX`/"MP20" 15%); re-ran the sync and all 5 landed correctly with matching
+      codes/percentages/applied amounts.
 - [x] **Real production incident during Stripe build, 2026-08-12 — caused by this work, not
       unrelated infra.** `payments-stripe-daily`'s Upsert node lacked `executeOnce: true`,
       causing ~90+ near-simultaneous duplicate full-array upserts (n8n HTTP Request nodes run

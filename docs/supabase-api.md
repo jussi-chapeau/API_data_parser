@@ -175,10 +175,44 @@ null rather than guessed, same discipline as `pickup_city`/`delivery_city` in mi
 
 ### `payments_stripe`
 
-Schema exists (`supabase/migrations/008_create_payments_tables.sql`) but **not yet synced**
-— blocked on a live `STRIPE_API_KEY` to confirm the real payload shape and the
-`orders.order_id` join key before committing to a sync design, same rigor applied to
-Paytrail above. See `docs/STATUS.md` workstream E.
+One row per Stripe checkout session. Synced daily at 05:30 Helsinki by N8N workflow
+`payments-stripe-daily` (`yNqzuzXmwPswa3Lk`), rolling 30-day window (`GET
+/v1/checkout/sessions`, `created[gte]` filter) — unlike Paytrail, Stripe has a real
+list/date-range API, so this follows the standard periodic-pull pattern.
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | text | Primary key — Stripe checkout session ID (`cs_live_...`) |
+| `payment_intent_id` | text | Stripe payment intent ID |
+| `order_id` | text | **Direct join to `orders.order_id`** — Stripe's `metadata.order_id` is a real UUID, no lookup needed (unlike Paytrail) |
+| `status` | text | Stripe's `payment_status`, e.g. `paid` |
+| `amount_cents` | integer | Total charged, integer cents |
+| `currency` | text | e.g. `eur` |
+| `payment_method_type` | text | e.g. `card` brand (`amex`, `visa`) or method type (`klarna`) |
+| `created_at` | timestamptz | When the checkout session was created |
+| `paid_at` | timestamptz | When the charge completed |
+| `fee_cents` | integer | Real Stripe processing fee (`balance_transaction.fee`) |
+| `refund_amount_cents` | integer | Refunded amount, if any |
+| `discount_coupon_code` | text | Primary discount's human-readable coupon code (e.g. `TESTAA10`), null if none |
+| `discount_percent_off` | numeric | Percent-off, if the coupon is percentage-based |
+| `discount_amount_off_cents` | integer | Fixed amount-off, if the coupon is amount-based |
+| `discount_applied_cents` | integer | Actual cents discounted on this session |
+| `discounts` | jsonb | Full discount detail array — only needed for the rare multi-discount session, use the flat columns above for the common case |
+| `raw_payload` | jsonb | Sanitized detail (no PII — see below) |
+| `synced_at` | timestamptz | Last sync time |
+
+**GDPR** — no cardholder PII synced from Stripe: no `billing_details`, `customer_details`,
+`receipt_email`, or Stripe customer ID land in this table, even though Stripe's API returns
+them. Only amounts, statuses, timestamps, method type, and the order-reference key.
+
+**Discount codes — confirmed live 2026-08-12.** Stripe's bare `session.discounts` field only
+gives an opaque `promotion_code` object ID, not the human-readable code — the actual coupon
+(`id`, `name`, `percent_off`) requires expanding `total_details.breakdown` too. Added for the
+BI chatbot's `upsell_discount_used` funnel stage
+(`supabase/migrations/009_add_stripe_discount_fields.sql`).
+
+**Not backfilled beyond the 30-day rolling window** — data starts 2026-08-12. No historical
+backfill script exists yet; add one if data older than 30 days before ship date is needed.
 
 ### `sync_log`
 
@@ -319,7 +353,7 @@ for o in orders:
   - Hubs: refreshed weekly Monday 02:00
   - `payments_paytrail`: **event-driven, real-time** — written as each payment completes,
     not on a schedule (no polling API exists to poll on one)
-  - `payments_stripe`: not yet live
+  - `payments_stripe`: daily 05:30 Helsinki, rolling 30-day window
 - **Row count:** ~11,000 orders, 99 hubs as of 29 July 2026.
 - **No end-customer name on platform orders.** `/order` rows have no customer field at
   all (0 of 1,385 sampled) — `organization_name` is the hub/partner, not the customer.

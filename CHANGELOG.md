@@ -15,6 +15,19 @@ vX.Y.Z" vs. "BI Chatbot vX.Y.Z". Scheme (SemVer-ish, no public API so read loose
 Versions before 2026-08-08 are reconstructed retroactively from `git log` for continuity,
 not tagged at the time.
 
+## v1.2.2 — 2026-08-12
+
+- **Added discount/promo-code tracking to `payments_stripe`**, requested by the BI chatbot
+  after it hit a gap trying to compute the `upsell_discount_used` funnel stage.
+  `supabase/migrations/009_add_stripe_discount_fields.sql`: `discount_coupon_code` +
+  percent/amount-off + applied cents (flat columns for the common case) plus a `discounts`
+  JSONB column (full detail, multi-discount edge case). Confirmed live: Stripe's bare
+  `session.discounts` only gives an opaque promo-code object ID, not the human-readable
+  code — needed `expand[]=total_details.breakdown` too, confirmed it works alongside the
+  existing fee/refund expand in the same request. Verified against real data (5 of 100
+  sampled sessions had a real discount) and re-synced — all landed with correct
+  codes/percentages/amounts.
+
 ## v1.2.1 — 2026-08-12
 
 - **Fixed a real production outage caused by v1.2.0's Stripe sync, same day.**
