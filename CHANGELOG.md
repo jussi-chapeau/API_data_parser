@@ -15,6 +15,15 @@ vX.Y.Z" vs. "BI Chatbot vX.Y.Z". Scheme (SemVer-ish, no public API so read loose
 Versions before 2026-08-08 are reconstructed retroactively from `git log` for continuity,
 not tagged at the time.
 
+## v1.2.3 — 2026-08-13
+
+- **GDPR fix: `payments_paytrail.raw_payload` was storing card BIN/last-4/country
+  verbatim.** Found during a cross-repo GDPR review with apukuski-bi-chatbot — Paytrail's
+  `GET /payments/{id}` response includes a `cardInfo` object that was never stripped,
+  unlike `payments_stripe`'s explicit sanitizer. Fixed with an allowlist of known-safe
+  fields (not a denylist), and cleaned the 3 already-synced rows retroactively. See
+  `docs/STATUS.md` workstream E and `apukuski-bi-chatbot/docs/GDPR_REVIEW.md`.
+
 ## v1.2.2 — 2026-08-12
 
 - **Added discount/promo-code tracking to `payments_stripe`**, requested by the BI chatbot

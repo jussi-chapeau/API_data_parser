@@ -522,11 +522,16 @@ spec and rationale: the original task message, not duplicated here.
       **Not backfilled** — no historical transaction list exists to backfill from; data
       starts accumulating from 2026-08-12 forward. Fee/refund columns exist in the schema
       but are always null — no confirmed Paytrail endpoint returns them yet.
-      **Not yet verified against a real live payment** — couldn't safely fire a synthetic
-      test against this production webhook (real side effects: customer emails, PDF
-      receipts, order creation). Will confirm on the next real Paytrail payment; check
-      `payments_paytrail` / `sync_log` (`workflow = 'Paytrail Payment Callback Tracking
-      (payments sync)'`) for a row after that.
+      **Confirmed working against real payments 2026-08-13** — 3 real rows landed naturally
+      (no synthetic test was ever needed).
+      **GDPR fix 2026-08-13:** found `raw_payload` was storing Paytrail's `cardInfo` object
+      (card BIN + last-4 + country) verbatim — cardholder-adjacent data explicitly out of
+      scope per the original task, and inconsistent with `payments_stripe`'s explicit
+      sanitizer. Fixed with an allowlist (not denylist) in the `Payments: Build Paytrail
+      Record` node, so an unexpected future Paytrail field can't silently leak through the
+      same way; cleaned the 3 already-synced rows retroactively (`raw_payload - 'cardInfo'`).
+      Found while doing a cross-repo GDPR review with apukuski-bi-chatbot — see
+      `apukuski-bi-chatbot/docs/GDPR_REVIEW.md`.
 - [x] **Stripe — live and shipping 2026-08-12.** Restricted read-only key provided (Checkout
       Sessions + Payment Intents + Charges/Refunds, read-only). Unlike Paytrail, Stripe has a
       real paginated list endpoint (`GET /v1/checkout/sessions`, `created[gte]` date filter),

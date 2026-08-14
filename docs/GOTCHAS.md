@@ -117,3 +117,14 @@ and overrides the value to the real flat rate: €400 excl. VAT / €502 incl. V
 order-sync workflows) going forward, backfilled for 24 existing rows. Don't sum
 `total_incl_vat_eur` for revenue without knowing this override exists, or Asuntosäätiö
 volume will look like €0 in reports.
+
+**A `raw_payload` column storing a provider's response verbatim needs an explicit
+allowlist, not "it's probably fine."** Paytrail's `GET /payments/{id}` includes a
+`cardInfo` object (card BIN, last-4, country) that isn't obvious from the fields used
+elsewhere in the sync — found 2026-08-13 storing verbatim in `payments_paytrail.raw_payload`
+for 2 days before catching it, inconsistent with `payments_stripe`'s explicit sanitizer
+built the same day it shipped. When a new provider integration's `raw_payload` is built,
+check the *full* live response (not just the fields you plan to use) for card/PII-adjacent
+data, and allowlist known-safe fields rather than denylisting known-bad ones — a denylist
+only catches what you already knew to look for; an unexpected future field from the
+provider passes through an allowlist as excluded by default, not included by default.

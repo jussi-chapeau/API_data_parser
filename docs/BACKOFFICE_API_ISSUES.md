@@ -441,6 +441,86 @@ live, an ETA would help us know when this becomes measurable.
 
 ---
 
+### 16. 46 orders bulk-created for one partner in one day, all with `platformFee: 0`
+
+**Raised 2026-08-14.** 46 of that day's 55 platform orders (84%) were bulk-created
+for a single organization, `NB-Palvelut`, in three machine-speed bursts, all with
+`platformFee: "0"` — a fee value this partner's orders have essentially never had
+before that day. Originally investigated as a possible Supabase sync-duplication
+bug; **ruled that out** — every order matches a real Backoffice record 1:1 (ID-level
+cross-check, zero orders on either side without a match except one still waiting on
+the next hourly sync, normal lag). What's left is a real question about this specific
+batch: was the platform fee correctly waived, or did something in however these
+orders were created fail to calculate/attach it?
+
+**Reproduce**
+
+```bash
+curl "$API/order?start_date=2026-08-14&end_date=2026-08-14&includeUnscheduled=true" \
+  -H "x-api-key: $KEY"
+```
+
+Filter to `hubId == "89894f09-68ea-4ac1-bd58-f598328371f8"` and
+`organizationName == "NB-Palvelut"` — 46 records, all sharing this fingerprint:
+
+- `platformFee: "0"` (46/46)
+- `origin: null` (46/46) — normal platform orders carry `app` or `n8n-offer`
+- `content` is malformed: `[{"id": null, "count": "1", "title": "<a JSON-array
+  re-encoded as a string, itself containing the real item list>"}]` — not a normal
+  content array
+- All 46 got a `routeId` and moved to `ROUTED` in the same tight timing pattern
+
+Created in exactly 3 bursts:
+
+| Window (UTC) | Orders | Span |
+|---|---|---|
+| 13:51:33 – 13:51:41 | 10 | 8s |
+| 13:52:39 – 13:52:44 | 11 | 5s |
+| 13:54:48 – 13:54:54 | 12 | 6s |
+| 14:05:20 – 14:05:27 (routing pass) | 12 | 7s |
+
+Example record (`orderId=7abf52cb-f029-4d08-9c57-731bd5a5b9a9`):
+```json
+{
+  "orderState": "ROUTED",
+  "orderType": "Rahti",
+  "origin": null,
+  "platformFee": "0",
+  "commissionRate": 0.26,
+  "routeId": "b9e93266-0c07-48e0-a876-ccdf86020663",
+  "content": [{"id": null, "count": "1", "title": "\"[{\\\"id\\\":\\\"\\\",\\\"count\\\":2,...}]\""}]
+}
+```
+
+**Historical context — this fee pattern is new for this partner.** Queried
+`NB-Palvelut`'s full order history in our warehouse (187 orders since
+2025-09-22): 103 have a real (`>0`) `platform_fee`, 38 are `null`, and **46 are
+exactly `0` — and all 46 of those are from 2026-08-14.** Before that day, this
+partner never had a `0` platform fee order. `commissionRate: 0.26` is present on
+these records, matching the rate that produces a real fee on this partner's other
+orders.
+
+**Impact** — these 46 orders sum to **€23,093.82** in `vatPrice` — **93.4% of that
+day's entire platform revenue** (€24,721.02 across all 55 orders). At each order's
+own `commissionRate`, the platform fee that *should* apply to this batch is
+approximately **€6,004.39**. If `platformFee: 0` is a bug rather than an intentional
+waiver for this partner, that's the amount currently uncollected — not a
+rounding-level issue, and it recurs on every order created through whatever path
+produced this batch, not just this one day.
+
+**Requested**
+1. Confirm whether these 46 orders came through a bulk-import or automation path
+   specific to `NB-Palvelut` (the malformed `content` field and machine-speed
+   creation timing both point to some automated/bulk flow, not the normal app
+   booking path).
+2. Confirm whether `platformFee: 0` on this batch is intentional (a partner
+   deal/waiver) or a calculation bug in whatever created these orders. If it's a
+   bug, advise whether it's retroactively correctable or needs manual settlement.
+3. Same question for `origin: null` and the malformed `content` field — expected
+   for this creation path, or should they be populated the normal way?
+
+---
+
 ## Summary
 
 | # | Issue | Priority | Requested change |
@@ -460,6 +540,9 @@ live, an ETA would help us know when this becomes measurable.
 | 13 | Possible same-day indexing lag | P3 | Confirm and document |
 | 14 | `/manual-order` record with no `orderId` | P3 | Backfill ID or filter upstream |
 | 15 | Tokmanni/Rusta/Huutokaupat.com partner channels: zero tagged orders | P2 | Confirm integrations are live; explain the gap |
+| 16 | 46 bulk-created orders for one partner, all `platformFee: 0` (~€6,004 at stake) | **P1** | Confirm bulk-import path; confirm fee waiver vs. bug |
 
 **If only three are actioned:** #3 (`userId`) unlocks all customer analytics,
-#2 stops revenue being misreported, #1 recovers the entire routes dataset.
+#2 stops revenue being misreported, #1 recovers the entire routes dataset. #16 is
+time-sensitive on top of those three — it's an active, recurring revenue question,
+not backlog.
