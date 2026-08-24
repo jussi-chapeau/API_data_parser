@@ -53,8 +53,12 @@ One row per order. Covers both standard (`is_manual=false`) and manual orders (`
 | `content` | jsonb | Order items/contents |
 | `stops` | text | **Free-text address string, not a count.** Holds a single location (usually pickup) plus occasional operator notes. No structured delivery address exists in the API — ~59% of rows contain no postcode. Do not use for geographic joins; reconcile by `order_id`. |
 | `charge` | jsonb | Charge object from API — **shape differs for platform vs manual** (see below) |
-| `platform_fee` | integer | Platform fee in **cents, excl. VAT** — populated for platform orders only; `null` for manual |
-| `service_fee` | integer | Service fee in **cents, excl. VAT** — populated for platform orders only; `null` for manual |
+| `platform_fee` | integer | Platform fee in **cents, excl. VAT** — populated for platform orders only; `null` for manual. Correctly branches on the decimal-cohort bug since 2026-08-24 (see notes below) |
+| `service_fee` | integer | Service fee in **cents, excl. VAT** — populated for platform orders only; `null` for manual. Same decimal-cohort handling as `platform_fee` |
+| `base_price_cents` | integer | Delivery-price component, **cents, excl. VAT** (`charge.basePrice`). Platform orders only; `null` for manual. Added 2026-08-24 |
+| `services_price_cents` | integer | Services-price component, **cents, excl. VAT** (`charge.servicesPrice`, usually 0). Platform orders only; `null` for manual. Added 2026-08-24 |
+| `recycling_surcharge_cents` | integer | Recycling/waste surcharge, **cents, excl. VAT** (`charge.recyclingSurcharge`, usually 0/null). Platform orders only; `null` for manual. Added 2026-08-24 |
+| `total_excl_vat_cents` | integer | `base_price_cents + platform_fee + services_price_cents + recycling_surcharge_cents` — **välitetty myynti excl. VAT (the full customer-paid total minus VAT), NOT liikevaihto** (Apukuski's actual cut — see `docs/REVENUE_DEFINITIONS.md` for that formula). Platform orders only; `null` for manual, and `null` where `base_price_cents`/`platform_fee` themselves are missing (mostly pre-Oct-2025 orders). Added 2026-08-24 |
 | `route_id` | text | Route FK → `routes.route_id` |
 | `commission_rate` | float | Commission rate (e.g. 0.15 = 15%) |
 | `underway_at` | timestamptz | When courier went underway |

@@ -15,6 +15,27 @@ vX.Y.Z" vs. "BI Chatbot vX.Y.Z". Scheme (SemVer-ish, no public API so read loose
 Versions before 2026-08-08 are reconstructed retroactively from `git log` for continuity,
 not tagged at the time.
 
+## v1.3.0 — 2026-08-24
+
+- **New excl-VAT price columns on `orders`**, requested by apukuski-bi-chatbot while
+  reconciling revenue against the Master P&L sheet (VAT-exclusive throughout — they were
+  re-deriving this downstream with fragile string-parsing). New columns:
+  `base_price_cents`, `services_price_cents`, `recycling_surcharge_cents`,
+  `total_excl_vat_cents` (the sum — välitetty myynti excl. VAT, deliberately not
+  liikevaihto, which needs a commission-rate computation the sync layer doesn't own).
+  Re-verified the underlying formula fresh against 973 real orders (not just re-citing
+  the original June validation): 771/772 exact. Backfilled for all existing platform
+  orders directly from the already-stored `charge` JSONB — no Backoffice API calls
+  needed. Manual orders: `null`, no source data exists to compute this from.
+  `supabase/migrations/010_add_excl_vat_price_components.sql`.
+- **Fixed: `platform_fee`/`service_fee` had no decimal-cohort handling** — silently
+  storing decimal-euro values (a known API quirk, `BACKOFFICE_API_ISSUES.md` #2) as
+  1/100th their real amount. Fixed at the sync layer and backfilled retroactively for
+  existing orders — **this changes historical `platform_fee`/`service_fee` values** for
+  the affected orders (confirmed via a fresh check: 20.7% of recent platform orders, well
+  above the original ~4% estimate — not a rounding difference). See `docs/STATUS.md`
+  workstream F and `docs/REVENUE_DEFINITIONS.md`.
+
 ## v1.2.3 — 2026-08-13
 
 - **GDPR fix: `payments_paytrail.raw_payload` was storing card BIN/last-4/country

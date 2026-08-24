@@ -68,6 +68,16 @@ May–Jul: **€8,856.81**.
 contract), or add an explicit `currencyUnit` field. Please do **not** leave this
 inferred from the presence of a decimal point.
 
+**Client-side mitigated 2026-08-24** — this doesn't fix the source, but downstream
+consumers no longer need to handle it themselves. `platform_fee`/`service_fee`/
+`base_price_cents`/`services_price_cents`/`recycling_surcharge_cents` (Supabase `orders`
+columns) now correctly branch on integer-vs-decimal at sync time and are safe to read
+as-is; existing rows were backfilled with the correction. **Re-checked the scale on a
+fresh, more recent sample: 20.7% of platform orders (201/973, last 2 months) — well above
+the original ~4%, not a rounding difference.** May be connected to issue #16
+(NB-Palvelut) — that cluster shares the `platformFee`-anomaly and malformed-`content`
+fingerprint, not independently confirmed as the same root cause.
+
 ---
 
 ### 3. Orders carry no customer reference — `/customer` cannot be joined
@@ -526,7 +536,7 @@ produced this batch, not just this one day.
 | # | Issue | Priority | Requested change |
 |---|---|---|---|
 | 1 | `/route` times out (504/500) | **P1** | Fix Lambda; single-day must respond |
-| 2 | Dual price units in `charge` | **P1** | Integer cents everywhere, or `currencyUnit` |
+| 2 | Dual price units in `charge` (**client-side mitigated 2026-08-24**, source still inconsistent — now 20.7% of orders, not ~4%) | **P1** | Integer cents everywhere, or `currencyUnit` |
 | 3 | No customer reference on orders | **P1** | Add `userId` + query filter |
 | 4 | Decimal cohort missing fields | P2 | Populate `organizationName`, `content`, `platformFee` |
 | 5 | No manual fee breakdown | P2 | Add numeric fee fields / `chargeTotalCents` |

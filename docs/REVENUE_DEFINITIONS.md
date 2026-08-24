@@ -54,6 +54,35 @@ API platformFee  == Alustamaksu / 1.255                      77/77 exact
 May blended take rate                                        30.38%
 ```
 
+**Re-verified fresh 2026-08-24** against 973 real platform orders from the prior two
+months (not just June): `vatPrice / (1 + vatPercentage/100) == basePrice + platformFee +
+servicesPrice + recyclingSurcharge` held 771/772 exact (excluding the decimal-cohort rows,
+handled separately — see below). One correction found in the same pass: an older doc
+(`data/AWS_API_charge_object_bug_report.md`) suggested `basePrice == workPrice +
+hubDrivePrice` — checked directly, **only 667/772 (86%) match**. Don't use that
+decomposition for anything; use `basePrice` directly, which is the one validated against
+`vatPrice` at 99.9%.
+
+### Synced columns (added 2026-08-24, migration 010)
+
+`base_price_cents`, `services_price_cents`, `recycling_surcharge_cents`, and a computed
+`total_excl_vat_cents` (= the four component columns summed — **välitetty myynti excl.
+VAT, not liikevaihto**) are now normalized columns on `orders`, sourced from `charge`.
+Previously these lived only inside the raw `charge` JSONB, forcing every consumer to
+parse it themselves. Requested by apukuski-bi-chatbot while reconciling against the
+Master P&L sheet. `total_excl_vat_cents` is null for manual orders (no source data exists
+to compute it — see "Known gaps" below) and null for platform orders where `basePrice` or
+`platformFee` itself is missing (mostly older, pre-Oct-2025 orders — see next section).
+
+**Fixed in the same pass**: `platform_fee`/`service_fee` previously used a naive
+`Math.round(parseFloat(...))` with no decimal-cohort handling (see "Two price units"
+below) — silently storing a decimal-euro value like `"84.07"` as `84` cents (€0.84)
+instead of `8407` cents (€84.07). Both the live sync and a one-time backfill of all
+existing platform orders now correctly branch on whether the value is an integer (already
+cents) or has a real fractional part (euros, needs ×100). This changed historical values
+for the decimal-cohort orders — if you'd already cached/reported `platform_fee`/
+`service_fee` figures, they may shift for those specific orders.
+
 Take rate exceeds the bare commission rate because alustamaksu and palvelumaksu
 sit on top of the commission. Observed: platform ~33–35%, manual ~29%.
 
@@ -118,7 +147,14 @@ order time, API-derived take rates are slightly optimistic.
 **Two price units in `charge`.** 297 platform orders (May–Jul 2026) return decimal
 euros instead of integer cents. Any parser must branch on the presence of a
 decimal point or revenue is understated — 10× for single-decimal values. See
-`BACKOFFICE_API_ISSUES.md` item 2.
+`BACKOFFICE_API_ISSUES.md` item 2. **Now handled at the sync layer** (2026-08-24,
+`parseChargeAmountCents` in Transform Orders) for `platform_fee`/`service_fee`/
+`base_price_cents`/`services_price_cents`/`recycling_surcharge_cents` — downstream
+consumers reading these columns no longer need their own branching logic. Re-checked the
+proportion fresh against the last 2 months: **20.7%** of platform orders (201/973), well
+above the original ~4% estimate — worth a look at `BACKOFFICE_API_ISSUES.md` #16
+(NB-Palvelut bulk-order pattern), which shares several of the same fingerprints
+(`platformFee`-cohort behavior, malformed `content`) and may be inflating this.
 
 ---
 

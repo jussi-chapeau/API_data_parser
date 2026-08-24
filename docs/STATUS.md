@@ -6,7 +6,7 @@ whoever starts a session reads it first, before assuming what's done vs. pending
 
 Update this file, don't create a new one — one canonical status doc avoids drift.
 
-**Last updated:** 2026-08-12
+**Last updated:** 2026-08-24
 
 **Ad-hoc production items closed out, outside the lettered workstreams below** — full detail
 in `CHANGELOG.md` and `docs/GOTCHAS.md`, not duplicated here: a ~2-day silent Supabase-key
@@ -581,6 +581,41 @@ spec and rationale: the original task message, not duplicated here.
 - [ ] `apukuski-bi-chatbot`'s `app/funnel.py::fetch_stripe_upsell` should migrate to reading
       `payments_stripe` from Supabase once that's live, same as other funnel stages — that
       change happens in the other repo, not here.
+
+### F. Excl-VAT price components synced (2026-08-24)
+
+Requested by apukuski-bi-chatbot while reconciling revenue figures against the Master
+P&L sheet (VAT-exclusive throughout) — they had to re-derive excl-VAT totals downstream
+with fragile string-parsing on `charge.vatPrice`.
+
+- [x] Re-verified `docs/REVENUE_DEFINITIONS.md`'s core formula fresh against 973 real
+      orders (last 2 months, not just the original June sample):
+      `vatPrice/(1+vatPercentage/100) == basePrice + platformFee + servicesPrice +
+      recyclingSurcharge`, 771/772 exact. **Correction found**: an older doc's
+      `basePrice == workPrice + hubDrivePrice` decomposition only matches 86% — don't use
+      it; `basePrice` itself is the validated one.
+- [x] Migration 010: new `orders` columns `base_price_cents`, `services_price_cents`,
+      `recycling_surcharge_cents`, `total_excl_vat_cents` (= the sum — **välitetty
+      myynti excl. VAT, not liikevaihto**, deliberately not computing the
+      commission-adjusted figure at the sync layer). Deployed to all 4 order-sync
+      workflows, live-verified, and backfilled for all existing platform orders (SQL
+      UPDATE against the already-stored `charge` JSONB — no Backoffice API calls needed).
+      Manual orders: `null`, unchanged — no source data exists to compute this from.
+- [x] **Found and fixed in the same pass**: `platform_fee`/`service_fee` had **no**
+      decimal-cohort handling (`BACKOFFICE_API_ISSUES.md` #2) — a naive
+      `Math.round(parseFloat(...))` was silently storing decimal-euro values as
+      1/100th their real amount. Fixed with a shared `parseChargeAmountCents` helper
+      (branches on integer vs. fractional), applied going forward and backfilled
+      retroactively. This changes historical `platform_fee`/`service_fee` values for the
+      affected orders — flag this if any downstream consumer had cached old figures.
+- [x] Re-checked the decimal-cohort proportion fresh: **20.7%** (201/973), well above the
+      original ~4% estimate. Possibly connected to issue #16 (NB-Palvelut) — shares the
+      `platformFee`-anomaly and malformed-`content` fingerprint, not confirmed as the same
+      root cause.
+- [x] Also found, unrelated: `userId` is now live on `/order` (real values, confirmed on
+      every order checked) — this is P1 issue #3, "the single highest-value change on the
+      list," possibly shipped without announcement. Not pursued further in this pass —
+      flagged as a separate follow-up (would unlock all customer-level analytics).
 
 ### D. Deferred security fix
 - [ ] Hardcoded Backoffice API key committed in workflow JSON + `scripts/reconcile_airtable_financials.py`
