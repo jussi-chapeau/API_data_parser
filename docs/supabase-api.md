@@ -218,6 +218,69 @@ BI chatbot's `upsell_discount_used` funnel stage
 **Not backfilled beyond the 30-day rolling window** — data starts 2026-08-12. No historical
 backfill script exists yet; add one if data older than 30 days before ship date is needed.
 
+### `orders_delete_candidates`
+
+Phantom orders proposed for deletion by `orders-reconcile` (rows still here that no longer
+exist upstream in Backoffice). **Proposals only — nothing in this table has been deleted.**
+
+| Column | Type | Description |
+|---|---|---|
+| `order_id` | text | Primary key |
+| `created_at` | timestamptz | The order's own creation time, for review context |
+| `detected_at` | timestamptz | When the reconcile job proposed it |
+| `evidence` | jsonb | Self-contained review context: day checked, live vs. Supabase counts, the order's org/hub/state/value, endpoints checked |
+| `status` | text | `pending` → `approved`/`rejected` → `deleted` |
+
+Readable by `bi_chatbot_readonly` (SELECT only). The BI bot posts pending rows to
+`#business-intelligence` for a human decision.
+
+### `orders_delete_approvals`
+
+The human decision, written by the BI bot. Kept separate from the candidates table so the
+audit record survives candidate cleanup, and so the BI role can INSERT here without any
+write access to candidates.
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | bigint | Auto-increment PK |
+| `order_id` | text | The order approved/rejected for deletion |
+| `approved_by` | text | Slack user id/handle of the authorizing human |
+| `approved_at` | timestamptz | Decision time |
+| `decision` | text | `approved` or `rejected` |
+| `note` | text | Optional free-text reason |
+
+`SELECT` + `INSERT` for `bi_chatbot_tracker`. **Neither BI role has any *write* privilege on
+`orders`** — DELETE/UPDATE/INSERT/TRUNCATE all confirmed absent (verified 2026-09-02).
+`bi_chatbot_readonly` does hold SELECT on `orders`, which is pre-existing and necessary for
+BI reporting. Only the sync pipeline's service role can actually delete, via
+`scripts/delete_approved_orders.py`.
+
+### `analytics_ga_daily_totals` (VIEW since 2026-09-14)
+
+**Not a table.** Supermetrics history (`analytics_ga_daily_totals_legacy`, ≤ 2026-08-10)
+stitched to the live Windsor.ai feed (`windsor.ga4_daily_totals`, ≥ 2026-08-15). Column names
+and order are unchanged, so existing consumers need no change. **Read-only — do not write to
+it.** Known gap: 2026-08-11..08-14, pending a Windsor backfill.
+
+`conversions` is **not a conversion count**: ~7.85 per session, because nearly every GA4 event
+is flagged as a key event. True in both halves of the view. `avg_session_length_sec` and
+`user_conversion_rate` are `NULL` for Windsor-era rows (not supplied by the connector).
+
+### `analytics_freshness` (VIEW)
+
+Freshness of each marketing/analytics feed. Use `data_age_days` — derived from `MAX(date)`,
+i.e. how recent the data actually is. **Never alert on `last_touched`/`synced_at`**:
+`false_freshness_days` shows exactly how wrong such an alarm would be, and it read 35 during
+the GA4 outage. Drives the `Data Freshness Watchdog` workflow.
+
+| Column | Meaning |
+|---|---|
+| `feed` | Table name |
+| `data_through` | `MAX(date)` — newest data present |
+| `data_age_days` | Days since `data_through` — **the real signal** |
+| `last_touched` | `MAX(synced_at)` — when a job last wrote, says nothing about data |
+| `false_freshness_days` | `last_touched - data_through` — how misleading `synced_at` is |
+
 ### `sync_log`
 
 Audit trail of every N8N sync run.

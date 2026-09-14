@@ -82,6 +82,26 @@ See [`docs/GOTCHAS.md`](docs/GOTCHAS.md) for full entries. Critical ones:
 
 ---
 
+## GDPR review — required for any PII-adjacent change
+
+`docs/GDPR_REVIEW.md` tracks what personal data this pipeline copies, retains and deletes.
+Treat it as part of the build process, not optional documentation.
+
+**Before finishing any change that:**
+1. adds/removes/changes a data source this pipeline reads from or writes to,
+2. changes which fields are synced — especially anything added to a `raw_payload` or other
+   verbatim-copy column,
+3. adds or changes a deletion, retention, anonymisation or backup mechanism,
+4. touches anything in `docs/GDPR_REVIEW.md`'s "Open issues" list,
+
+**→ read `docs/GDPR_REVIEW.md` first, and update it** (data flow table + a dated review-log
+entry) before considering the change done.
+
+Verify against live data before writing anything down — query the actual table/API rather
+than inferring from a column name what it holds or where it goes. Two real findings came
+from doing exactly that: Paytrail storing card BIN/last-4 verbatim, and deletion backups
+defaulting to the repo root un-gitignored.
+
 ## How to work in this repo
 
 - **Docs-first.** Update relevant `docs/` before or with code changes. Index: [`docs/README.md`](docs/README.md).

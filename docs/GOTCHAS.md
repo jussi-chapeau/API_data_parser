@@ -128,3 +128,41 @@ check the *full* live response (not just the fields you plan to use) for card/PI
 data, and allowlist known-safe fields rather than denylisting known-bad ones — a denylist
 only catches what you already knew to look for; an unexpected future field from the
 provider passes through an allowlist as excluded by default, not included by default.
+
+**The orders sync is upsert-only — deletions upstream never propagated.** For the project's
+entire history there was no delete path: if Backoffice deleted an order, the row stayed in
+Supabase forever, still counted in every downstream report and still holding customer street
+addresses in `stops`. August 2026 overstated by 34 gigs / EUR 16,520 for exactly this reason.
+Fixed 2026-09-02 with a detect→approve→delete pipeline (`docs/STATUS.md` workstream G), but
+the general lesson outlives that specific incident: **an upsert-only sync silently diverges
+from its source in one direction only, and that divergence is invisible to every check that
+looks for missing rows rather than surplus ones.** Reconciliation has to compare both
+directions. Note also that a phantom (deleted upstream) and a duplicate (still present
+upstream) look similar in the data but have opposite fixes — deleting a duplicate here is
+pointless, the hourly sync re-upserts it within the hour. See `BACKOFFICE_API_ISSUES.md` #17.
+
+**Count comparisons hide single-row drift; compare ID sets.** `verify_sync_counts.py`
+compared row counts per month and reported May 2026 as "off by 1" for three months. A
+difference of 1 is indistinguishable from ordinary sync lag when all you have is two
+integers, so nobody chased it — the row was genuinely missing the whole time. The ID-level
+diff (`scripts/verify_order_parity.py`, 2026-09-03) names the specific `order_id` and the
+direction, which turns "probably fine" into a row you can go fix. Related: reconciliation has
+to run **both** directions. A sync that only looks for surplus rows will never notice absent
+ones, and upsert-only pipelines drift in both directions for different reasons — deletions
+upstream leave phantoms here, failed chunks leave gaps here.
+
+**A sync reporting `success` proves nothing about the data — and `synced_at` can lie.** The
+GA4 sync produced no new data from 2026-08-10 and nobody noticed for **five weeks**. Every
+nightly run reported `success`, because it did exactly what it was told: it called
+Supermetrics, got rows back for dates it already had, and upserted them. `synced_at` was
+re-stamped to today on ~100 existing rows every night, while `MAX(date)` stayed frozen at
+2026-08-10. The BI bot's staleness warning reads `MAX(synced_at)` — so the one alarm pointed
+at this failure was **actively told everything was fine, for 35 days**. The same pattern hid
+Meta going dark on 2026-09-02 (12 days of false freshness before it was found).
+
+**Measure freshness as `MAX(date)` — how recent the DATA is — never `MAX(synced_at)` or job
+exit status.** Both of those describe the job, not the data, and a job can succeed perfectly
+while delivering nothing. `public.analytics_freshness` exposes both side by side
+(`data_age_days` vs `false_freshness_days`) precisely so the gap stays visible, and the
+`Data Freshness Watchdog` workflow alerts on the former. Generalises beyond marketing data:
+any upsert-only pipeline with a `synced_at` column can fail this way.

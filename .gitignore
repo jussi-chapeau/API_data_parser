@@ -5,3 +5,12 @@
 __pycache__/
 *.pyc
 .DS_Store
+
+# Deletion backups: full order rows including customer street addresses (`orders.stops`).
+# Personal data -- must never be committed. Retention is enforced by
+# scripts/delete_approved_orders.py; see docs/GDPR_REVIEW.md.
+backups/
+deleted_orders_backup_*.json
+
+# Supabase CLI local link state
+supabase/.temp/

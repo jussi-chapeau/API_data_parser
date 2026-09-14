@@ -39,6 +39,100 @@ def run_query(token: str, sql: str) -> dict:
         return json.loads(resp.read().decode("utf-8"))
 
 
+def split_statements(sql: str) -> list[str]:
+    """Split a migration into statements on top-level semicolons only.
+
+    Two things this has to get right, both learned from real breakage:
+
+    1. Full-line `--` comments are stripped BEFORE splitting. Filtering whole statements
+       that merely *start* with "--" silently drops real SQL whenever a comment block sits
+       in front of a statement -- that silently dropped an entire CREATE TABLE in
+       003_create_marketing_ads_tables.sql.
+    2. Semicolons inside dollar-quoted bodies ($$ ... $$, $tag$ ... $tag$) are NOT
+       statement separators. Splitting naively tears `DO $$ BEGIN ... END $$` into
+       fragments and Postgres rejects them with "unterminated dollar-quoted string" --
+       hit on 011_phantom_order_deletion.sql, whose RLS grants live in a DO block.
+    3. Semicolons inside ordinary single-quoted strings are not separators either --
+       hit on 014_ga4_windsor_cutover.sql, where a COMMENT body contained "; ". This was
+       a documented limitation rather than a fixed one for two migrations running; a
+       COMMENT with a semicolon in it is too ordinary to keep tripping over. '' inside a
+       string is an escaped quote, not a close.
+
+    Still not a real SQL parser -- it does not handle `--` appearing inside a string
+    literal, or E'' / dollar-quoted escape exotica. Those have not come up.
+    """
+    lines = [ln for ln in sql.split("\n") if not ln.strip().startswith("--")]
+    text = "\n".join(lines)
+
+    statements: list[str] = []
+    buf: list[str] = []
+    dollar_tag: str | None = None
+    in_squote = False
+    i = 0
+    while i < len(text):
+        ch = text[i]
+
+        # A trailing `--` comment runs to end of line and is NOT code. Skip over it without
+        # interpreting anything inside: an apostrophe in prose ("-- the order's own id")
+        # would otherwise open a string literal that never closes and swallow the rest of
+        # the file into one malformed statement. Caught exactly that way while fixing the
+        # single-quote handling below -- 011 collapsed from 10 statements to 1.
+        if not in_squote and dollar_tag is None and text.startswith("--", i):
+            eol = text.find("\n", i)
+            if eol == -1:
+                eol = len(text)
+            buf.append(text[i:eol])   # kept verbatim; harmless to Postgres, keeps SQL readable
+            i = eol
+            continue
+
+        # Single-quoted string: only dollar-quoting outranks it, so check it first and
+        # consume everything until the closing quote.
+        if in_squote:
+            if ch == "'":
+                if text[i + 1:i + 2] == "'":      # '' is an escaped quote, stay inside
+                    buf.append("''")
+                    i += 2
+                    continue
+                in_squote = False
+            buf.append(ch)
+            i += 1
+            continue
+
+        if dollar_tag is None and ch == "'":
+            in_squote = True
+            buf.append(ch)
+            i += 1
+            continue
+
+        if dollar_tag is None and ch == "$":
+            # Possible opening dollar-quote: $$ or $tag$
+            end = text.find("$", i + 1)
+            if end != -1 and (text[i + 1:end] == "" or text[i + 1:end].isidentifier()):
+                dollar_tag = text[i:end + 1]
+                buf.append(dollar_tag)
+                i = end + 1
+                continue
+        elif dollar_tag is not None and text.startswith(dollar_tag, i):
+            buf.append(dollar_tag)
+            i += len(dollar_tag)
+            dollar_tag = None
+            continue
+
+        if ch == ";" and dollar_tag is None:
+            stmt = "".join(buf).strip()
+            if stmt:
+                statements.append(stmt)
+            buf = []
+        else:
+            buf.append(ch)
+        i += 1
+
+    tail = "".join(buf).strip()
+    if tail:
+        statements.append(tail)
+    return statements
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         print(f"Usage: {sys.argv[0]} <migration.sql>", file=sys.stderr)
@@ -51,14 +145,7 @@ def main() -> int:
         return 1
 
     sql = Path(sys.argv[1]).read_text()
-    # Strip full-line comments BEFORE splitting on semicolons. Filtering whole statements
-    # that merely *start* with "--" silently drops real SQL whenever a comment block sits
-    # directly in front of a statement (e.g. a multi-line header comment before the first
-    # CREATE TABLE) -- caught this the hard way on 003_create_marketing_ads_tables.sql,
-    # where it silently dropped the first table entirely. Doesn't handle inline trailing
-    # comments or "--" inside string literals; none of this repo's migrations use those.
-    lines = [line for line in sql.split("\n") if not line.strip().startswith("--")]
-    statements = [s.strip() for s in "\n".join(lines).split(";") if s.strip()]
+    statements = split_statements(sql)
     results = []
     import time
     for i, stmt in enumerate(statements):

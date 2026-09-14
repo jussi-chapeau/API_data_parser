@@ -15,6 +15,128 @@ vX.Y.Z" vs. "BI Chatbot vX.Y.Z". Scheme (SemVer-ish, no public API so read loose
 Versions before 2026-08-08 are reconstructed retroactively from `git log` for continuity,
 not tagged at the time.
 
+## v1.6.0 — 2026-09-14
+
+- **Ended a five-week GA4 reporting outage.** The GA4 sync stopped producing new data on
+  2026-08-10; every nightly run still reported `success`. `public.analytics_ga_daily_totals`
+  is now a **view** stitching Supermetrics history (587 days, ≤ 2026-08-10) to the live
+  Windsor.ai feed (≥ 2026-08-15) — 617 rows through 2026-09-13, **zero code change in
+  apukuski-bi-chatbot**, which keeps reading the same table name. Verified by connecting as
+  the real `bi_chatbot_readonly` role, not just by checking grants.
+  `supabase/migrations/014_ga4_windsor_cutover.sql`.
+- **Deactivated `Analytics GA Daily Sync` (j4gatZqXaw9tk55x)** — first step of dropping
+  Supermetrics. It wrote the table that is now a view; a `UNION ALL` view is not
+  auto-updatable, so leaving it active would have turned a silent no-op into a nightly
+  failure.
+- **New `Data Freshness Watchdog` (G0y7frdNMt3EU9cL), daily 07:00.** Alerts on `MAX(date)` —
+  how recent the *data* is — not on `synced_at` or job exit status. **This is the fix for the
+  root cause, not the symptom:** the Supermetrics job re-stamped `synced_at` on old rows
+  nightly, so the BI bot's staleness warning reported "fresh" for 35 days. Live-tested: it
+  correctly flagged Meta as 12 days stale. New `public.analytics_freshness` view exposes
+  `data_age_days` alongside `false_freshness_days` so the gap stays visible.
+- **GA4 feed fully restored and validated.** Backfilled Windsor to 2026-07-01 (75 days, no
+  gaps), which closed the 08-11..08-14 hole, replaced the partial 08-10 row (7 sessions ->
+  236), and created the first overlap between the old and new feeds. **Validated on 40
+  overlapping days: sessions diverge 0.02%, users 0.00%** — Windsor reproduces Supermetrics.
+  View boundary moved to 2026-06-30 (migration 017); contract view now 622 rows,
+  2025-01-01..2026-09-14, zero gaps, verified as `bi_chatbot_readonly`.
+- **`windsor_writer` now owns its staging tables** (migration 016). Windsor issues
+  `ALTER TABLE ... ADD COLUMN` for unmatched fields, which needs ownership — without it a
+  single wrong field name silently took the whole feed down in a retry loop while the vendor
+  UI reported "Connection successful".
+- **Fixed two real bugs in `scripts/apply_supabase_migration.py`'s statement splitter**,
+  both found while applying 014: a semicolon inside a single-quoted string (a `COMMENT` body)
+  split a statement in half; and the fix for that initially broke apostrophes in inline `--`
+  comments, which collapsed migration 011 from 10 statements to 1. Both covered by cases now,
+  regression-checked against all 14 migrations.
+
+## v1.5.0 — 2026-09-03
+
+- **`orders-reconcile` now reconciles both directions.** It only ever detected surplus rows
+  in Supabase; nothing watched for rows *missing* from Supabase. That blind spot let one May
+  2026 order sit missing for three months, because a count-based check reported "difference
+  of 1" which reads as ordinary sync lag. Backoffice-only rows are now re-fetched and
+  upserted immediately — additive, so no approval gate; gating it would recreate the exact
+  "nobody noticed" failure. Supabase-only rows still require human approval, unchanged. Both
+  counts are logged every run so zero-drift is visible rather than assumed — via a new
+  `sync_log.details` JSONB column (migration 013), *not* `error_message`, which stays
+  reserved for real failures. An abort stops both directions.
+- **Backfilled the one missing May order** (`e8578d18…`, 2026-05-24), through the new repair
+  path rather than a one-off script.
+- **New `scripts/verify_order_parity.py`** — per-month ID-level diff. Replaces
+  count-comparison as the parity check, since counts cannot say which row differs or in which
+  direction.
+- **New `scripts/order_transform.py`** — shared transform so repaired rows are byte-identical
+  to normally-synced ones. Note this is now the third copy of that logic (Python module, the
+  four sync workflows' `Transform Orders`, and `Reconcile`); `tests/test_order_transform.py`
+  exists specifically to catch divergence between them.
+- Tests: 42 passing (was 22).
+
+## v1.4.1 — 2026-09-02
+
+- **Fixed: revoking a deletion approval was silently ignored.** `orders_delete_approvals` is
+  append-only for the BI bot by design, so a revocation is a later contradicting row rather
+  than an edit — but `delete_approved_orders.py` treated "an approval row exists" as
+  authority and would delete anyway. Reachable through ordinary use (recording an approval
+  does not clear the candidate from the queue, so the BI bot can legitimately record a
+  `rejected` for the same order before the next run). New view
+  `orders_delete_approvals_current` (migration 012) resolves latest-wins in SQL,
+  `approved_at DESC, id DESC`. The `id` tiebreak is load-bearing: `approved_at` is
+  transaction time, so `executemany` batches share a timestamp — proven live. No UPDATE grant
+  added; the table stays append-only and only the read changed. A current `rejected` blocks
+  deletion and leaves the candidate `pending`. Reported by the BI project.
+- **GDPR: deletion backups now have a defined home, permissions and retention.** They contain
+  full order rows including customer street addresses, so they are a fresh copy of the data
+  the deletion erases. **They previously defaulted to the CWD — the repo root — and were not
+  gitignored, so a backup of customer addresses was committable.** Now
+  `backups/deleted_orders/` (gitignored, `0700`/`0600`), 30-day retention pruned on every
+  run so it cannot lapse. Documented in this repo's new `docs/GDPR_REVIEW.md`, which also
+  records a larger pre-existing gap: `orders` has no retention policy at all.
+- Tests: 22 passing (was 13).
+
+## v1.4.0 — 2026-09-02
+
+- **Phantom-order deletion pipeline: detection + containment.** The orders sync was
+  upsert-only with **no delete path at all**, so anything Backoffice deleted survived here
+  forever — inflating BI counts and retaining customer addresses past the controller's own
+  deletion (GDPR Art. 5(1)(e)). August 2026 overstated by 34 gigs / EUR 16,520 this way.
+  New: `scripts/reconcile_phantom_orders.py` (proposes, never deletes),
+  `scripts/delete_approved_orders.py` (the only path that deletes, and only from the
+  reviewed list, re-verified against the live API immediately beforehand),
+  `n8n-workflows/orders-reconcile.json` (daily 04:30), and
+  `supabase/migrations/011_phantom_order_deletion.sql`.
+  **Abort rails are the core of the design** — an unreadable day, a day returning zero
+  upstream ids while Supabase holds rows, >50 candidates / >10% of the window, or a stalled
+  sync log aborts the run writing nothing, because at the point of computation a stalled
+  sync is indistinguishable from mass upstream deletion.
+  `tests/test_reconcile_abort_rails.py`: 13 tests, all passing.
+  Acceptance test passed exactly as specified: August → exactly 34 candidates, June → 0,
+  July → 0. **Live**: migration 011 applied (2 tables, 5 indexes, 3 RLS policies), workflow
+  `ur0vJrdAnHaCNhcF` active daily 04:30. End-to-end verified — the N8N run independently
+  reproduced the Python implementation's exact result (34 candidates, all `pending`, all
+  2026-08-14/NB-Palvelut) with `orders` untouched. **Nothing is deleted yet and nothing will
+  be** until the BI approval path is wired up and a human approves; the 34 sit as `pending`
+  by design. See `docs/STATUS.md` workstream G for the remaining open questions.
+- **Root cause logged upstream, not fixed here** — `BACKOFFICE_API_ISSUES.md` **#17**: the
+  route import has no idempotency key, so reruns mint fresh `order_id`s (4 reruns on
+  2026-08-14). Also documents why the 6 remaining August *duplicate* groups can only be
+  fixed in Backoffice: they still exist upstream, so deleting them here just gets them
+  re-upserted by the hourly sync.
+- **Fixed `scripts/apply_supabase_migration.py`'s statement splitter** — it split on every
+  `;`, which tears `DO $$ ... $$` blocks apart and fails with "unterminated dollar-quoted
+  string". Found while applying 011, whose RLS grants live in a DO block. Now dollar-quote
+  aware; would otherwise have broken every future migration containing a DO block, function
+  or trigger. Regression-checked against an existing migration.
+- **Sync hardening — deployed and live-verified on all 4 order-sync workflows.**
+  `sync_log` is now trustworthy, which the abort rails depend on: `rows_upserted` comes from
+  PostgREST's `Content-Range` (DB-confirmed) instead of the count of rows merely
+  transformed, and a new `Log Sync Failed` node writes real `status='failed'` rows —
+  previously `'success'` was hardcoded and **100% of rows claimed success**. Also: explicit
+  `?on_conflict=order_id` instead of PostgREST's implicit PK fallback, and Transform Orders
+  now de-duplicates by `order_id` before the POST (a repeated id in one batch raises
+  `ON CONFLICT DO UPDATE command cannot affect row a second time` and fails the *whole*
+  batch).
+
 ## v1.3.0 — 2026-08-24
 
 - **New excl-VAT price columns on `orders`**, requested by apukuski-bi-chatbot while

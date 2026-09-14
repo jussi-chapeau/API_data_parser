@@ -1,0 +1,329 @@
+{
+  "name": "Orders Reconcile (phantom detection)",
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "6hIScmlYADgaf16s"
+  },
+  "nodes": [
+    {
+      "id": "aaaaaaaa-000b-000b-000b-000000000001",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 4 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "aaaaaaaa-000b-000b-000b-000000000002",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        480
+      ],
+      "webhookId": "aaaaaaaa-000b-000b-000b-000000000002",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "orders-reconcile",
+        "responseMode": "onReceived",
+        "options": {}
+      }
+    },
+    {
+      "id": "aaaaaaaa-000b-000b-000b-000000000003",
+      "name": "Reconcile",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        380
+      ],
+      "parameters": {
+        "jsCode": "// Phantom-order reconciliation. Proposes deletions; NEVER deletes.\n//\n// REFERENCE IMPLEMENTATION: scripts/reconcile_phantom_orders.py. That version has the\n// test suite (tests/test_reconcile_abort_rails.py, 8 tests covering every abort rail) and\n// is the source of truth for this logic. If you change the rails here, change them there\n// and re-run the tests -- silent drift between the two is the main risk with this node.\n//\n// Abort rails: any one of these throws, which aborts the run BEFORE anything is written\n// and triggers the Sync Error Handler -> #tech-alerts-sos. Aborting must always beat\n// guessing: a timed-out chunk or a stalled sync is indistinguishable, at this point in the\n// code, from \"Backoffice deleted everything\".\nconst API_BASE = 'https://qtml5qv6uk.execute-api.eu-central-1.amazonaws.com/production';\nconst API_KEY = 'BACKOFFICE_API_KEY_PLACEHOLDER';\nconst SUPA = 'https://ybznbfezrdgzgptxkgul.supabase.co';\nconst SUPA_KEY = 'SUPABASE_SERVICE_KEY';\n\nconst WINDOW_DAYS = 45;\nconst SKIP_RECENT_DAYS = 2;   // same-day indexing lag, BACKOFFICE_API_ISSUES.md #13\nconst MAX_TRIES = 6;\nconst BASE_BACKOFF_MS = 1000;\nconst MAX_CANDIDATES = 50;\n// Raised 5.0 -> 10.0 on 2026-09-02, only because rail 2a below now exists. The real August\n// incident (34 phantoms / 681 rows) came in at 4.993% and cleared the old ceiling by\n// 0.007pp. Keep in step with scripts/reconcile_phantom_orders.py.\nconst MAX_CANDIDATE_PCT = 10.0;\nconst ORDER_SYNC_WORKFLOWS = ['orders-hot', 'orders-warm', 'orders-cool', 'backfill'];\n\n// --- Order transform: mirrors scripts/order_transform.py, which in turn mirrors the\n// `Transform Orders` node in orders-{hot,warm,cool}.json. Three copies is two too many, but\n// the repair direction must write rows IDENTICAL to what the normal sync writes, or repaired\n// rows would look like drift on the next run. If you change one, change all three;\n// tests/test_order_transform.py pins the behaviours that have actually bitten us.\nconst ASUNTOSAATIO_EXCL_VAT_EUR = 400;\nconst ASUNTOSAATIO_INCL_VAT_EUR = 502;\n\nfunction tsToIso(val) {\n  if (val === null || val === undefined || val === '' || val === 0) return null;\n  // `-` in the first 10 chars, not a bare 4-digit check: an epoch like \"1779599528\" has\n  // leading digits that look like a year and silently produced an invalid timestamp.\n  if (typeof val === 'string' && (val.includes('T') || val.slice(0, 10).includes('-'))) return val;\n  const n = parseFloat(val);\n  if (isNaN(n)) return null;\n  return new Date(n * 1000).toISOString();\n}\n\n// Charge amounts are integer cents for most orders but decimal euros for a real cohort\n// (~20% of recent platform orders), with no distinguishing flag -- issue #2.\nfunction parseChargeAmountCents(v) {\n  if (v === null || v === undefined || v === '') return null;\n  const n = parseFloat(v);\n  if (isNaN(n)) return null;\n  return Number.isInteger(n) ? Math.round(n) : Math.round(n * 100);\n}\n\nfunction parseManualTotal(charge) {\n  if (!charge || charge.charge === null || charge.charge === undefined || charge.charge === '') {\n    return { eur: null, cents: null, raw: null };\n  }\n  const raw = String(charge.charge).trim();\n  const cleaned = raw.replace(/ /g, '').replace(/€/g, '').replace(/EUR/gi, '')\n                     .replace(/\\s/g, '').replace(',', '.');\n  if (!/^[-+]?\\d+(\\.\\d+)?$/.test(cleaned)) return { eur: null, cents: null, raw };\n  const eur = parseFloat(cleaned);\n  return { eur, cents: Math.round(eur * 100), raw };\n}\n\nfunction transformOrder(d) {\n  if (!d || !d.orderId) return null;\n  const isManual = d.isManual === true || d.isManual === 'true' ||\n    (d.customer !== undefined && d.additionalInfo !== undefined);\n  const charge = d.charge || {};\n\n  let manualData = null;\n  let isAsuntosaatio = 'No';\n  if (isManual) {\n    const pricing = parseManualTotal(charge);\n    let mentions = false;\n    try { mentions = JSON.stringify(d).toLowerCase().includes('asuntosäätiö'); } catch (e) { mentions = false; }\n    const override = mentions && pricing.eur === 0;\n    isAsuntosaatio = override ? 'Yes' : 'No';\n    manualData = {\n      customer: d.customer || null,\n      additionalInfo: d.additionalInfo || null,\n      serviceFeeApplied: d.serviceFeeApplied || null,\n      total_incl_vat_eur: override ? ASUNTOSAATIO_INCL_VAT_EUR : pricing.eur,\n      total_incl_vat_cents: override ? ASUNTOSAATIO_INCL_VAT_EUR * 100 : pricing.cents,\n      total_excl_vat_eur: override ? ASUNTOSAATIO_EXCL_VAT_EUR : null,\n      total_excl_vat_cents: override ? ASUNTOSAATIO_EXCL_VAT_EUR * 100 : null,\n      price_basis: 'gross_incl_vat',\n      raw_charge_total: pricing.raw,\n      original_total_incl_vat_eur: override ? pricing.eur : undefined,\n      value_override_reason: override ? 'asuntosaatio_b2b_flat_rate' : undefined,\n    };\n  }\n\n  const base = isManual ? null : parseChargeAmountCents(charge.basePrice);\n  const services = isManual ? null : parseChargeAmountCents(charge.servicesPrice);\n  const recycling = isManual ? null : parseChargeAmountCents(charge.recyclingSurcharge);\n  const platformFee = isManual ? null : parseChargeAmountCents(charge.platformFee);\n  const serviceFee = isManual ? null : parseChargeAmountCents(charge.serviceFee);\n  const totalExclVat = (!isManual && base !== null && platformFee !== null)\n    ? base + platformFee + (services || 0) + (recycling || 0) : null;\n\n  return {\n    order_id: d.orderId,\n    is_manual: isManual,\n    created_at: tsToIso(d.created || d.createdAt),\n    organization_name: d.organizationName || null,\n    org_id: d.orgId || null,\n    hub_id: d.hubId || null,\n    order_state: d.orderState || null,\n    order_type: d.orderType || null,\n    origin: isManual ? null : (d.origin || null),\n    first_schedule: tsToIso(d.firstSchedule),\n    schedule: d.schedule || null,\n    content: d.content || null,\n    stops: d.stops || null,\n    charge: d.charge || null,\n    platform_fee: platformFee,\n    service_fee: serviceFee,\n    base_price_cents: base,\n    services_price_cents: services,\n    recycling_surcharge_cents: recycling,\n    total_excl_vat_cents: totalExclVat,\n    route_id: d.routeId || null,\n    commission_rate: d.commissionRate !== undefined && d.commissionRate !== null ? parseFloat(d.commissionRate) : null,\n    underway_at: tsToIso(d.underwayAt),\n    in_transit_at: tsToIso(d.inTransitAt),\n    delivered_at: tsToIso(d.deliveredAt),\n    review: d.review || null,\n    manual_data: manualData,\n    is_asuntosaatio_gig: isAsuntosaatio,\n    synced_at: new Date().toISOString(),\n  };\n}\n\nconst sleep = (ms) => new Promise((r) => setTimeout(r, ms));\nconst isoDay = (d) => d.toISOString().slice(0, 10);\n\nasync function supaGet(path) {\n  return await this.helpers.httpRequest({\n    method: 'GET',\n    url: `${SUPA}/rest/v1/${path}`,\n    headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },\n    json: true,\n  });\n}\n\n// Day-by-day, never multi-day: 30-day /order windows fail ~47% of the time with 500/504\n// (BACKOFFICE_API_ISSUES.md #7).\nasync function liveOrdersForDay(day) {\n  const orders = new Map();\n  const endpoints = [\n    // includeUnscheduled=true REQUIRED here, or ~96 real orders/window look deleted (#12)\n    { path: 'order', extra: '&includeUnscheduled=true' },\n    // ...and must NOT be sent to /manual-order, which 400s on it (docs/GOTCHAS.md)\n    { path: 'manual-order', extra: '' },\n  ];\n  for (const ep of endpoints) {\n    let ok = false;\n    let lastErr = null;\n    for (let attempt = 1; attempt <= MAX_TRIES; attempt++) {\n      try {\n        const data = await this.helpers.httpRequest({\n          method: 'GET',\n          url: `${API_BASE}/${ep.path}?start_date=${day}&end_date=${day}${ep.extra}`,\n          headers: { 'x-api-key': API_KEY },\n          json: true,\n        });\n        if (!Array.isArray(data)) throw new Error('unexpected response shape');\n        for (const o of data) if (o && o.orderId) orders.set(o.orderId, o);\n        ok = true;\n        break;\n      } catch (e) {\n        lastErr = e;\n        if (attempt < MAX_TRIES) await sleep(BASE_BACKOFF_MS * Math.pow(2, attempt - 1));\n      }\n    }\n    if (!ok) {\n      throw new Error(\n        `ABORT RAIL 1: /${ep.path} for ${day} failed after ${MAX_TRIES} tries ` +\n        `(${lastErr && lastErr.message}). A day we cannot read is indistinguishable from ` +\n        `a day where everything was deleted -- refusing to propose any candidates.`\n      );\n    }\n  }\n  return orders;\n}\n\nconst today = new Date();\nconst end = new Date(today); end.setUTCDate(end.getUTCDate() - SKIP_RECENT_DAYS);\nconst start = new Date(end); start.setUTCDate(start.getUTCDate() - (WINDOW_DAYS - 1));\n\n// --- Rail 3: is the pipeline healthy enough for its output to be trusted at all? ---\n// Ordered by completed_at, NOT started_at: started_at is NULL on every order-sync row in\n// sync_log (verified live 2026-09-02).\nconst wfFilter = ORDER_SYNC_WORKFLOWS.map((w) => `\"${w}\"`).join(',');\nconst runs = await supaGet.call(\n  this,\n  `sync_log?workflow=in.(${wfFilter})&status=eq.success` +\n  `&completed_at=gte.${isoDay(start)}T00:00:00Z` +\n  `&select=workflow,completed_at&order=completed_at.desc&limit=1`\n);\nif (!runs || runs.length === 0) {\n  throw new Error(\n    `ABORT RAIL 3: no successful order-sync run in sync_log since ${isoDay(start)}. ` +\n    `If the pipeline itself is stalled we have no business proposing deletions.`\n  );\n}\nconst ageH = (Date.now() - new Date(runs[0].completed_at).getTime()) / 3600000;\nif (ageH > 24) {\n  throw new Error(\n    `ABORT RAIL 3: most recent successful order-sync completed ${ageH.toFixed(1)}h ago ` +\n    `(${runs[0].completed_at}). Pipeline looks stalled -- refusing to propose deletions.`\n  );\n}\n\nconst candidates = [];\nconst repairs = [];\nlet totalSupaRows = 0;\nfor (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {\n  const day = isoDay(d);\n  const live = await liveOrdersForDay.call(this, day);\n  const liveIds = new Set(live.keys());\n\n  const nxt = new Date(d); nxt.setUTCDate(nxt.getUTCDate() + 1);\n  // No order_state filter on either side: a CANCELLED order still exists upstream and is\n  // still returned by /order, so it is not a phantom.\n  const rows = await supaGet.call(\n    this,\n    `orders?created_at=gte.${day}T00:00:00Z&created_at=lt.${isoDay(nxt)}T00:00:00Z` +\n    `&select=order_id,created_at,is_manual,order_state,organization_name,hub_id,` +\n    `total_excl_vat_cents,synced_at`\n  );\n  totalSupaRows += rows.length;\n\n  // --- Rail 2a: a whole day wiped out ---\n  // An empty-but-successful (HTTP 200 `[]`) response is not a retryable error, so rail 1\n  // never sees it -- yet it makes every Supabase row for that day look deleted. Checked\n  // per-day, not in aggregate: on a 45-day window one wiped day is a small overall\n  // percentage and would slip under the proportional rail below.\n  if (rows.length > 0 && live.size === 0) {\n    throw new Error(\n      `ABORT RAIL 2a: ${day} returned ZERO order ids upstream while Supabase holds ` +\n      `${rows.length} rows for that day. An empty-but-successful API response is ` +\n      `indistinguishable from that day being deleted wholesale -- refusing to propose ` +\n      `${rows.length} deletions off it. Nothing written.`\n    );\n  }\n\n  // --- Direction 2: present upstream, missing here -> repair immediately ---\n  // Additive and non-destructive, so no approval gate: re-adding a row that provably exists\n  // upstream cannot lose data, and requiring a click would recreate the exact failure this\n  // catches (one May 2026 order sat missing for three months because nothing watched this\n  // direction). Deliberately NOT volume-capped -- if Supabase lost rows, re-adding them all\n  // is the correct response. Transform mirrors scripts/order_transform.py.\n  const supaIds = new Set(rows.map((r) => r.order_id));\n  for (const [oid, o] of live) {\n    if (!supaIds.has(oid)) repairs.push(transformOrder(o));\n  }\n\n  for (const r of rows) {\n    if (!liveIds.has(r.order_id)) {\n      candidates.push({\n        order_id: r.order_id,\n        created_at: r.created_at,\n        status: 'pending',\n        evidence: {\n          reason: 'present_in_supabase_absent_upstream',\n          checked_day: day,\n          live_api_ids_that_day: liveIds.size,\n          supabase_rows_that_day: rows.length,\n          order: {\n            created_at: r.created_at, is_manual: r.is_manual, order_state: r.order_state,\n            organization_name: r.organization_name, hub_id: r.hub_id,\n            total_excl_vat_cents: r.total_excl_vat_cents, synced_at: r.synced_at,\n          },\n          endpoints_checked: ['/order?includeUnscheduled=true', '/manual-order'],\n          detected_by: 'n8n orders-reconcile',\n        },\n      });\n    }\n  }\n}\n\n// --- Rail 2: volume sanity, evaluated before anything is written ---\nconst pct = totalSupaRows ? (candidates.length / totalSupaRows) * 100 : 0;\nif (candidates.length > MAX_CANDIDATES) {\n  throw new Error(\n    `ABORT RAIL 2b: ${candidates.length} candidates exceeds the ${MAX_CANDIDATES}-row ` +\n    `ceiling -- treating as a data-source failure, not a mass deletion. Nothing written.`\n  );\n}\nif (pct > MAX_CANDIDATE_PCT) {\n  throw new Error(\n    `ABORT RAIL 2b: candidates are ${pct.toFixed(1)}% of the ${totalSupaRows}-row window, ` +\n    `over the ${MAX_CANDIDATE_PCT}% ceiling. Nothing written.`\n  );\n}\n\nreturn [{ json: {\n  candidates,\n  repairs,\n  stats: {\n    window_start: isoDay(start), window_end: isoDay(end),\n    days_checked: WINDOW_DAYS, supabase_rows_in_window: totalSupaRows,\n    candidates: candidates.length, candidate_pct: Number(pct.toFixed(3)),\n    repairs: repairs.length,\n  },\n} }];\n"
+      }
+    },
+    {
+      "id": "aaaaaaaa-000b-000b-000b-000000000004",
+      "name": "Has Candidates?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        700,
+        380
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ $json.stats.candidates }}",
+              "rightValue": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "aaaaaaaa-000b-000b-000b-000000000005",
+      "name": "Split Candidates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        280
+      ],
+      "parameters": {
+        "jsCode": "// One item per candidate so the Upsert node can post them as a batch. Emits nothing when\n// there are no candidates -- the IF node routes that case straight to Log Sync.\nconst c = $json.candidates || [];\nreturn c.map((x) => ({ json: x }));\n"
+      }
+    },
+    {
+      "id": "aaaaaaaa-000b-000b-000b-000000000006",
+      "name": "Upsert Candidates",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1140,
+        280
+      ],
+      "executeOnce": true,
+      "parameters": {
+        "method": "POST",
+        "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/orders_delete_candidates?on_conflict=order_id",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=ignore-duplicates,return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $input.all().map(i => i.json) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "aaaaaaaa-000b-000b-000b-000000000007",
+      "name": "Log Sync",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1360,
+        380
+      ],
+      "executeOnce": true,
+      "parameters": {
+        "method": "POST",
+        "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/sync_log",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify([{ workflow: 'orders-reconcile', started_at: $execution.startedAt || null, completed_at: new Date().toISOString(), date_range: $('Reconcile').first().json.stats.window_start + ' to ' + $('Reconcile').first().json.stats.window_end, rows_upserted: $('Reconcile').first().json.stats.repairs, status: 'success', error_message: null, details: { phantom_candidates: $('Reconcile').first().json.stats.candidates, repaired: $('Reconcile').first().json.stats.repairs, supabase_rows_in_window: $('Reconcile').first().json.stats.supabase_rows_in_window, drift_total: $('Reconcile').first().json.stats.candidates + $('Reconcile').first().json.stats.repairs } }]) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "aaaaaaaa-000b-000b-000b-000000000008",
+      "name": "Split Repairs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        620
+      ],
+      "parameters": {
+        "jsCode": "// One item per repaired order. Emits nothing when there is no drift in this direction,\n// which is the expected steady state once parity is reached.\nconst r = $('Reconcile').first().json.repairs || [];\nreturn r.filter(Boolean).map((x) => ({ json: x }));"
+      }
+    },
+    {
+      "id": "aaaaaaaa-000b-000b-000b-000000000009",
+      "name": "Upsert Repairs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        620
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "parameters": {
+        "method": "POST",
+        "url": "https://ybznbfezrdgzgptxkgul.supabase.co/rest/v1/orders?on_conflict=order_id",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer SUPABASE_SERVICE_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $input.all().map(i => i.json) }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Reconcile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Reconcile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reconcile": {
+      "main": [
+        [
+          {
+            "node": "Has Candidates?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Split Repairs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Candidates?": {
+      "main": [
+        [
+          {
+            "node": "Split Candidates",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Candidates": {
+      "main": [
+        [
+          {
+            "node": "Upsert Candidates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Candidates": {
+      "main": [
+        [
+          {
+            "node": "Log Sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Repairs": {
+      "main": [
+        [
+          {
+            "node": "Upsert Repairs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

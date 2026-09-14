@@ -6,7 +6,7 @@ whoever starts a session reads it first, before assuming what's done vs. pending
 
 Update this file, don't create a new one — one canonical status doc avoids drift.
 
-**Last updated:** 2026-08-24
+**Last updated:** 2026-09-14
 
 **Ad-hoc production items closed out, outside the lettered workstreams below** — full detail
 in `CHANGELOG.md` and `docs/GOTCHAS.md`, not duplicated here: a ~2-day silent Supabase-key
@@ -616,6 +616,236 @@ with fragile string-parsing on `charge.vatPrice`.
       every order checked) — this is P1 issue #3, "the single highest-value change on the
       list," possibly shipped without announcement. Not pursued further in this pass —
       flagged as a separate follow-up (would unlock all customer-level analytics).
+
+### G. Phantom-order deletion pipeline (2026-09-02)
+
+BI overstated August 2026 by 34 gigs / EUR 16,520 (Slack reported 673 gigs / 143.7k EUR;
+Airtable showed ~500-550). Root cause is upstream — see `BACKOFFICE_API_ISSUES.md` **#17**,
+logged today: the NB-Palvelut route import ran 4x on 2026-08-14 with **no idempotency key**,
+minting fresh `order_id`s each time. Backoffice later deleted three batches; **our sync is
+upsert-only with no delete path**, so those 34 rows survived here — still counted, still
+holding customer street addresses in `stops` (GDPR Art. 5(1)(e); BI repo
+`docs/GDPR_REVIEW.md` issue #8).
+
+Detection already shipped on the BI side (v1.17.0, `check_sync_integrity` /
+`check_duplicate_orders`). **Deletion had to live here** — `bi_chatbot_readonly` is
+read-only by design and is not gaining `DELETE ON orders`.
+
+**Built and tested today:**
+- [x] `scripts/reconcile_phantom_orders.py` — walks the trailing 45 days **one day at a
+      time** (30-day `/order` windows fail ~47% of the time, #7), passes
+      `includeUnscheduled=true` to `/order` but **not** `/manual-order` (400s, GOTCHAS),
+      skips the 2 most recent days (#13 indexing lag). Proposes only; never deletes.
+- [x] **Abort rails** — the point of the whole design. Any unreadable day, >50 candidates
+      or >5% of the window, or a stalled/absent sync log aborts the run **writing nothing**.
+      `tests/test_reconcile_abort_rails.py`, 8 tests, all passing, including the headline
+      case: sync stalled 3 days + upstream returning nothing must abort, not propose
+      deleting 200 rows. (Precedent: the 2026-08 key rotation killed 8 workflows for two
+      days with zero alerts — a naive rule would have proposed deleting the table.)
+- [x] `scripts/delete_approved_orders.py` — the only code path that deletes from `orders`.
+      Deletes **only** from the reviewed, stored candidate list, never a freshly computed
+      set. **Re-verifies each order against the live API immediately before deleting**
+      (approval may be days old; anything that reappeared upstream is skipped) and backs
+      up full rows to JSON first. Fails closed: if absence can't be confirmed, it skips.
+- [x] `n8n-workflows/orders-reconcile.json` — daily 04:30 (after Orders Cool 03:00, clear
+      of Routes 04:00 / Ads 05:00). **Built but deliberately NOT deployed** — see blockers.
+- [x] `supabase/migrations/011_phantom_order_deletion.sql` — **written, NOT applied**, see
+      blockers.
+
+**Acceptance test — passed exactly as specified:**
+```
+August 2026 dry-run  -> 34 candidates   (required: exactly 34)
+June 2026 dry-run    ->  0 candidates   (required: 0)
+July 2026 dry-run    ->  0 candidates   (required: 0)
+abort rails          ->  8/8 tests pass
+```
+Cross-check confirmed live: all 34 have `synced_at = 2026-08-20T09:00`, all created
+2026-08-14, all NB-Palvelut; the other 647 August rows re-synced 2026-09-02. A clean
+binary split, no ambiguity.
+
+**Independent hardening — deployed and live-verified on all 4 order-sync workflows:**
+- [x] Explicit `?on_conflict=order_id` (was relying on PostgREST's implicit PK fallback).
+- [x] `Log Sync` now reports the **DB-confirmed** row count parsed from PostgREST's
+      `Content-Range` (`return=headers-only,count=exact`), not the count of rows we merely
+      transformed. Verified live: header `*/70` present and parsed.
+- [x] New `Log Sync Failed` node on the upsert's error branch writes a real
+      `status='failed'` row. Previously `status:'success'` was hardcoded — **100% of
+      sync_log rows said success**, which is exactly why abort rail 3 could not be trusted
+      before this change.
+- [x] Transform Orders de-duplicates by `order_id` before the POST — a repeated id in one
+      batch raises `ON CONFLICT DO UPDATE command cannot affect row a second time` and
+      fails the *whole* batch, not just that row.
+- [x] Indexes on `orders(created_at)` and `orders(synced_at)` — in migration 011, pending.
+
+**Blockers resolved 2026-09-02 (same day):**
+- [x] **Supabase Management API token was expired (401).** New scoped token issued
+      (Database: Read-write, Migrations: Read-write, project-scoped). Note it has a **short
+      expiry** — when migrations start failing with 401 again, that is the cause, not a code
+      problem. Worth deciding deliberately whether to accept periodic re-issuance or use a
+      longer-lived credential.
+- [x] **Fixed `scripts/apply_supabase_migration.py` while applying 011** — its statement
+      splitter split on every `;`, which tears `DO $$ ... $$` blocks apart ("unterminated
+      dollar-quoted string"). Now dollar-quote aware. This would have broken every future
+      migration containing a DO block, function, or trigger. Verified against 011 (DO block
+      intact, 13 internal semicolons preserved) and regression-checked against 008.
+- [x] **Role names verified, not assumed** — `bi_chatbot_readonly` and `bi_chatbot_tracker`
+      both exist. All 3 RLS policies created and confirmed present in `pg_policies`.
+- [x] **Migration 011 applied and verified**: 2 tables, 5 indexes, 3 policies, RLS enabled.
+- [x] **Corrected an overstatement of my own** — the migration comment and
+      `docs/supabase-api.md` originally claimed neither BI role has *any* privilege on
+      `orders`. Verified live: `bi_chatbot_readonly` **does** hold SELECT on `orders`
+      (pre-existing, and necessary — it is how the BI bot reads orders at all). What it
+      holds none of is **write** privilege: DELETE/UPDATE/INSERT/TRUNCATE all confirmed
+      absent. That is the property the design actually depends on. Wording fixed in both.
+- [x] **Workflow deployed and active**: `ur0vJrdAnHaCNhcF`, daily 04:30.
+
+**Still open — need your input:**
+- [x] **Resolved 2026-09-02 — and the first version had a real bug the BI side caught.**
+      BI inserts into `orders_delete_approvals`; the delete script treats the decision as
+      authority. But the table is append-only for them (no UPDATE, deliberately — it is an
+      audit trail behind an irreversible action), so **revoking an approval can only mean
+      inserting a contradicting row**, and the script's "does an approval row exist?" check
+      would find the superseded `approved` row and delete anyway. Reachable through ordinary
+      use, not misuse: recording an approval does not clear the candidate from the queue, so
+      between approval and the next 04:30 run the BI bot can legitimately record a
+      `rejected` for the same order.
+      Fixed with `orders_delete_approvals_current` (migration 012), which resolves latest-wins
+      in SQL — `approved_at DESC, id DESC`. **The `id` tiebreak is load-bearing**:
+      `approved_at` defaults to `now()` (transaction time), so a batch inserted with
+      `executemany` shares one timestamp; proven live (ids 11/12, identical timestamp, higher
+      id correctly won). No UPDATE grant added — the table stays append-only, only the read
+      changed. A current `rejected` blocks deletion and leaves the candidate `pending`, so a
+      later approval can still act on it. 9 new tests; all 3 live acceptance cases pass; test
+      rows cleaned up (0 approval rows, all 34 candidates still `pending`).
+- [x] **Abort rail ceiling retuned 2026-09-02 — but only after adding a sharper rail.** The
+      5% ceiling was a blunt proxy for "the API returned nothing"; the real August window sat
+      at **4.993%**, clearing it by 0.007pp, so a genuine incident in a quieter month would
+      have tripped it and blocked correct detection. Rather than just loosen a safety rail on
+      a deletion pipeline, added **rail 2a**: any single day returning ZERO upstream ids while
+      Supabase holds rows for it aborts immediately. That is the precise signature of an
+      empty-but-successful (HTTP 200 `[]`) response, which is *not* a retryable error and so
+      rail 1 never sees it. Checked per-day, not in aggregate — on a 45-day window one wiped
+      day is a small overall percentage and slips under any proportional rail (there is a
+      test for exactly that: 12 phantoms in a 1212-row window = 0.99%, under both old and new
+      ceilings, and rail 2a still stops it). Only then was the percentage ceiling raised
+      5% → 10%. The 50-row absolute cap is unchanged. Tests: 13 passing (was 8), including a
+      boundary test pinning the rail as `>` not `>=`, and a regression test on the real
+      August ratio. Acceptance test re-run after the change: still exactly 34.
+      **Mirrored into the N8N Code node in the same pass** — the drift risk below is real and
+      this was the first change that could have caused it.
+- [ ] **The reconcile logic exists twice** — tested Python (`scripts/`, 8 passing tests) and
+      an untested N8N Code node. Python is marked the reference implementation, but drift is
+      a real risk. Alternative would be having N8N shell out to the script, if there is
+      somewhere to host it.
+- [ ] **34 candidates are sitting as `pending` and nothing will delete them** until the BI
+      approval path is wired up and a human approves. That is by design, but it means the
+      August overstatement is still present in the data until then.
+- [ ] `started_at` remains NULL in `sync_log` — `$execution.startedAt` does not resolve in
+      this n8n version. Left explicit (`|| null`) rather than faked; the abort rail orders by
+      `completed_at` as specified.
+
+### H. Bidirectional reconcile — Supabase ↔ Backoffice 1:1 (2026-09-03)
+
+Requested after an ID-level diff (not counts) showed total drift of **35 rows** across
+2026-04..08: 34 extra in August (the known phantoms) and **1 missing from May**.
+
+- [x] **Backfilled the missing May order** `e8578d18-1041-4d16-b3c0-f2f07f7aaaf0`
+      (2026-05-24, Kierrätyspalvelu, org Kirill). Existed upstream, had never been in
+      Supabase — most likely a chunk that failed mid-sync and was never retried, since the
+      pipeline was upsert-only with no repair pass. Applied through the new repair path
+      rather than a throwaway script, so it exercised the same code the daily job now uses.
+- [x] **`orders-reconcile` now reconciles BOTH directions.** It previously only looked for
+      Supabase-only rows, which is exactly why the May row sat missing for three months while
+      `verify_sync_counts.py` reported "difference of 1" that read as ordinary lag.
+      - Supabase-only → `orders_delete_candidates` (unchanged; destructive, human-approved).
+      - Backoffice-only → **re-fetched and upserted immediately**. Additive and
+        non-destructive, so no approval gate — gating it would recreate the "nobody noticed"
+        failure. Deliberately **not** volume-capped: if Supabase lost rows, re-adding them all
+        is the correct response. The rails restrain destruction, not restoration.
+      - Both counts now logged every run, so "drift = 0" is a visible fact rather than an
+        assumption — in a new `sync_log.details` JSONB column (migration 013). The first
+        version put that summary in `error_message`, which was wrong: it made every healthy
+        run look like it carried an error and would have broken the obvious way anyone
+        searches for real failures (`WHERE error_message IS NOT NULL`). Caught and corrected
+        the same session; `error_message` stays reserved for actual failures.
+      - An abort still stops the **whole** run — no candidates *and* no repairs. If the
+        comparison itself looks unreliable, acting on either direction from that same data
+        would be unwise. Test: `test_abort_prevents_repairs_too`.
+- [x] **New `scripts/verify_order_parity.py`** — per-month **ID-level** diff, replacing
+      count-comparison as the parity check. Counts cannot tell you *which* row differs or in
+      which direction; that ambiguity is what hid the May order.
+- [x] **New `scripts/order_transform.py`** — one shared transform, mirroring the N8N
+      `Transform Orders` node. The repair path must write rows *identical* to the normal
+      sync, or every repaired row would look like fresh drift on the next run. 16 tests pin
+      the behaviours that have actually caused incidents (epoch-vs-ISO, the decimal-euro
+      cohort, Asuntosäätiö override, manual-order nulls).
+- [x] Tests: **42 passing** (was 22).
+
+**Known cost, stated plainly:** the transform now exists in **three** places — the shared
+Python module, the `Transform Orders` node in the four order-sync workflows, and the
+`Reconcile` node. That is two more than ideal. `tests/test_order_transform.py` is the guard:
+a divergence should fail there rather than surface as wrong money columns. Consolidating
+would mean N8N calling out to hosted code, which needs somewhere to host it — still open.
+
+### I. Supermetrics → Windsor.ai migration (2026-09-14, in progress)
+
+Supermetrics is being dropped entirely. Windsor.ai replaces it for GA4, Meta and Google Ads.
+Spec and gotchas: `apukuski-bi-chatbot/docs/WINDSOR_HANDOVER.md` — written by that repo,
+addressed here, because this repo owns ingestion and that one is read-only by design.
+
+**Done 2026-09-14 — the GA4 outage is over:**
+- [x] `analytics_ga_daily_totals` is now a **view**: 587 days of Supermetrics history
+      (≤ 08-10) + the live Windsor feed (≥ 08-15) = 617 rows through 09-13. The BI repo
+      needed **no code change** — same table name, same columns, same order.
+      Migration `014_ga4_windsor_cutover.sql`.
+- [x] Verified from the consumer's side by connecting as the real `bi_chatbot_readonly`
+      role (617 rows, all 30 Windsor rows visible) — not just by checking grants. The
+      handover warns RLS returns 0 rows *silently*, which is the same failure mode that hid
+      the outage, so a grant check alone would not have been proof.
+- [x] `Analytics GA Daily Sync` deactivated. It wrote the now-view nightly.
+- [x] **Root-cause fix, not just the symptom:** `analytics_freshness` view +
+      `Data Freshness Watchdog` (G0y7frdNMt3EU9cL, daily 07:00), keyed on `MAX(date)`.
+      Live-tested — correctly flagged Meta at 12 days stale.
+
+**The finding worth remembering** (now in `docs/GOTCHAS.md`): the outage was not unmonitored.
+The BI bot's staleness warning reads `MAX(synced_at)`, and the Supermetrics job kept
+succeeding nightly and re-stamping `synced_at` on ~100 old rows while adding no new dates. So
+the alarm reported "fresh" for 35 days. **The alarm was defeated, not absent** — which is why
+the replacement measures data age, not job success.
+
+**GA4 totals feed completed 2026-09-14 (later same day):**
+- [x] Backfilled Windsor to **2026-07-01** — 75 days, no gaps. Deliberately pulled six weeks
+      more than needed: it closes the 08-11..08-14 hole, replaces the partial 08-10 row, and
+      (the real reason) creates the **first overlap between the two feeds**, which the
+      handover said did not exist and therefore made validation impossible.
+- [x] **Validated Windsor against Supermetrics on 40 overlapping days** — sessions diverge
+      **0.02%** (7,888 vs 7,887 total), total users **0.00%**, views 0.16%. Windsor
+      reproduces Supermetrics. This is now evidence rather than assumption, and it is the
+      basis for trusting the same migration for Meta and Google Ads.
+- [x] Moved the view boundary to `2026-06-30` (migration 017). Contract view: **622 rows,
+      2025-01-01..2026-09-14, zero gaps, zero duplicate dates**, verified as the real
+      `bi_chatbot_readonly` role. GA4 `data_age_days` went 35 -> 0.
+- [x] **Corrected a bad historical row**: 2026-08-10 read 7 sessions (sync died mid-day);
+      Windsor supplies 236. Every other overlapping day matched within one session.
+- [x] Migration 016: **`windsor_writer` now owns the staging tables.** Windsor does more DDL
+      than documented -- it issues `ALTER TABLE ... ADD COLUMN` for any requested field with
+      no matching column, which requires ownership, not INSERT. With postgres owning the
+      tables, one wrong field name took the *entire feed* down in a silent 30-minute retry
+      loop while the vendor UI said "Connection successful". Now it degrades to one stray
+      column instead. Relevant to the four hand-configured tasks still to build.
+
+**Still open on the Windsor side:** the corrected field list has not saved -- proven, because
+Windsor re-added the invalid `conversions_purchase` column it could only have requested from
+the stale list. So `average_session_duration`, `user_conversion_rate`, `ecommerce_purchases`
+and `transactions` exist but are NULL. Two are unread by the consumer; the other two are the
+diagnostic for whether GA4 purchase tracking is genuinely broken. When they populate, update
+the Windsor-era SELECT in the view to read them directly and drop `conversions_purchase`.
+
+**Remaining — see the migration to-do list handed to Jussi 2026-09-14.** Headlines: Meta is
+dead since 09-02 and is the urgent one; Google Ads is healthy (through 09-13) so it moves
+last, on its own schedule; the 08-11..08-14 GA4 gap needs a Windsor backfill; the Windsor API
+key needs rotating; and the source/geo grains still have no Windsor feed, so
+`bi_website_report`'s breakdowns stay dark.
 
 ### D. Deferred security fix
 - [ ] Hardcoded Backoffice API key committed in workflow JSON + `scripts/reconcile_airtable_financials.py`

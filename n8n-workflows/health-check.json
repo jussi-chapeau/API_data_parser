@@ -19,8 +19,8 @@
         "rule": {
           "interval": [
             {
-              "field": "minutes",
-              "minutesInterval": 15
+              "field": "hours",
+              "hoursInterval": 2
             }
           ]
         }
@@ -104,7 +104,7 @@
           "value": "tech-alerts-sos",
           "mode": "name"
         },
-        "text": "=\ud83d\udea8 *Supabase Health Check FAILED*\n\n\ud83d\udccc *Error:* {{ $json.error?.message || 'Unreachable' }}\n\ud83d\udd50 *Time:* {{ new Date().toISOString() }}\n\nSupabase REST API at `ybznbfezrdgzgptxkgul` is not responding.",
+        "text": "=🚨 *Supabase Health Check FAILED*\n\n📌 *Error:* {{ $json.error?.message || 'Unreachable' }}\n🕐 *Time:* {{ new Date().toISOString() }}\n\nSupabase REST API at `ybznbfezrdgzgptxkgul` is not responding.",
         "otherOptions": {
           "includeLinkToWorkflow": false
         }

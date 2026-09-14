@@ -531,6 +531,50 @@ produced this batch, not just this one day.
 
 ---
 
+### 17. Route import has no idempotency key — reruns mint duplicate orders
+
+**Raised 2026-09-02.** This is the root cause behind issue #16, and behind an
+August 2026 BI overstatement of 34 gigs / €16,520.
+
+On 2026-08-14 the NB-Palvelut hub `89894f09-68ea-4ac1-bd58-f598328371f8` ran a
+route import **four times** — 13:51 (11 rows), 13:52 (11), 13:54 (12), 14:05 (12).
+Each run minted a **fresh set of `order_id`s** for what is the same real-world
+work. Nothing in the payload ties a rerun to its predecessor, so the API has no
+way to recognise the second, third and fourth runs as repeats of the first.
+
+Backoffice subsequently deleted three of those four batches, which is how we know
+they were unintended. But that cleanup happened only for this incident and only
+after it was noticed manually.
+
+**Two distinct downstream problems, one cause**
+
+| | What it is | Where it can be fixed |
+|---|---|---|
+| **Phantom rows** | Orders deleted in Backoffice that survive in Supabase, because our sync is upsert-only with no delete path | Our side — built 2026-09-02, see `docs/STATUS.md` workstream G |
+| **Duplicate rows** | The same real job present multiple times **in Backoffice itself** — 6 groups / 12 surplus rows in August | **Only here.** Verified 2026-09-02: `/order` still returns all 18 rows in those 6 groups, so deleting them from Supabase is pointless — the hourly sync re-upserts them within the hour |
+
+We have built detection and containment for the first. The second is not
+addressable from our side at all.
+
+**Impact** — every rerun of a route import inflates gig counts and välitetty
+myynti for that hub, in Backoffice and in every downstream consumer. It is
+invisible until someone reconciles against Airtable by hand, as happened here.
+The exposure is unbounded: nothing prevents a fifth rerun tomorrow.
+
+**Requested**
+1. Add an idempotency key to the route-import endpoint — a client-supplied token,
+   or a natural key (hub + route + scheduled date + stop set) — so a rerun updates
+   the existing orders instead of minting new ones. This is the actual fix; the
+   two items below are mitigations if it can't be done soon.
+2. Until then, please confirm whether reruns can be detected server-side after the
+   fact, so the cleanup that happened manually for 2026-08-14 can be routine.
+3. Clean up the 6 remaining August duplicate groups (12 surplus rows) in
+   Backoffice. Once removed there they become phantoms, and our pipeline will
+   propose them for deletion on the next nightly run — but they cannot be removed
+   from our side first.
+
+---
+
 ## Summary
 
 | # | Issue | Priority | Requested change |
@@ -551,6 +595,7 @@ produced this batch, not just this one day.
 | 14 | `/manual-order` record with no `orderId` | P3 | Backfill ID or filter upstream |
 | 15 | Tokmanni/Rusta/Huutokaupat.com partner channels: zero tagged orders | P2 | Confirm integrations are live; explain the gap |
 | 16 | 46 bulk-created orders for one partner, all `platformFee: 0` (~€6,004 at stake) | **P1** | Confirm bulk-import path; confirm fee waiver vs. bug |
+| 17 | Route import has no idempotency key — reruns mint duplicate orders (root cause of #16; 34 gigs / €16,520 overstated in Aug) | **P1** | Add idempotency key; clean up 6 remaining Aug duplicate groups |
 
 **If only three are actioned:** #3 (`userId`) unlocks all customer analytics,
 #2 stops revenue being misreported, #1 recovers the entire routes dataset. #16 is
