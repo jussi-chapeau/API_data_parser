@@ -184,3 +184,19 @@ configuring these tasks). Refreshed every 30 min by pg_cron.
 
 Generalises: any time a third party writes directly into a table your reporting reads, their
 mistakes become your outage instantly. Put a layer you control in between.
+
+**Renaming a table silently repoints every view that reads it.** Postgres views store the OID
+of the object they read, not its name — so `ALTER TABLE x RENAME TO x_legacy` rewrites every
+dependent view to say `FROM x_legacy`. If you then create a new view called `x`, the dependents
+keep reading the *old frozen table* and nothing errors.
+
+Hit on 2026-09-16: cutting Google Ads over to Windsor renamed the legacy table and put a view
+in its place, which silently switched `analytics_freshness` to monitoring the frozen legacy
+table. It would have reported the same `data_through` forever and never alerted — a monitor
+quietly watching the wrong object, which is worse than no monitor because it reports healthy.
+The only symptom was a one-day discrepancy between what freshness reported and what the view
+actually contained.
+
+**After any rename-and-replace-with-a-view, recreate every dependent view** and check
+`pg_get_viewdef()` to confirm what it really references. Grep for the `_legacy` suffix in view
+definitions as a quick tell.

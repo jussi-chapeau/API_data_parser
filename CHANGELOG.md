@@ -35,8 +35,16 @@ not tagged at the time.
   from placement grain down to `(date, campaign_id, publisher_platform)` — keeping the
   Facebook/Instagram split, dropping position/device detail that nothing reports on
   (migration 021).
-- Validation so far: every complete month matches Supermetrics exactly — Google Ads March
-  (€2,377.42 / 2,856 clicks) and September (€4,777.35 / 4,435 clicks) to the cent.
+- **Google Ads cut over to Windsor** (migration 024) after validating **six complete months
+  exact** on spend, clicks and impressions — March €2,377.42, April €5,027.19, May €7,659.81,
+  June €7,806.23, July €6,472.26, August €9,080.44. `ads_google_campaign_daily` is now a view
+  (legacy ≤ 2026-03-15 + core ≥ 03-16): 4,947 rows, 2024-08-05..2026-09-16, no duplicate
+  keys. Supermetrics workflow `CZbzvcmagNxvC1JN` deactivated.
+- **Fixed a silent monitoring failure I introduced in the same change** (migration 025).
+  Postgres views bind to object OIDs, not names, so renaming the legacy table silently
+  repointed `analytics_freshness` at the frozen legacy table — it would have reported the same
+  date forever and never alerted. Caught via a one-day discrepancy. Documented in GOTCHAS:
+  after any rename-and-replace-with-a-view, recreate every dependent view.
 
 ## v1.6.0 — 2026-09-14
 
