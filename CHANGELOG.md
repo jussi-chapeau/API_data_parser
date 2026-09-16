@@ -15,6 +15,27 @@ vX.Y.Z" vs. "BI Chatbot vX.Y.Z". Scheme (SemVer-ish, no public API so read loose
 Versions before 2026-08-08 are reconstructed retroactively from `git log` for continuity,
 not tagged at the time.
 
+## v1.8.0 — 2026-09-16
+
+- **Meta cut over to Windsor** (migration 026). Boundary is **2026-03-31, not 03-16**, and the
+  reason matters: Windsor's Meta feed is exact for April, May, August and September, but March
+  was short by exactly €146.06 / 42,524 impressions — precisely the "Waitlist" campaign, which
+  ran 2026-03-05..03-30 and appears nowhere in Windsor. That's Meta's Marketing API excluding
+  deleted campaigns, not a config error; the day after it stopped, both feeds agree exactly.
+  Cutting at 03-16 would have silently erased €146 of real spend. **Windsor under-reports any
+  historical period containing since-deleted campaigns — legacy is the only record.**
+  Supermetrics workflow `vuQOMC0tnTaZkMTC` deactivated. All three Supermetrics syncs are now
+  off.
+- **Fixed a live double-counting defect I introduced** (migration 027). Each contract view is
+  `legacy WHERE date <= B` UNION ALL `core` — but only the legacy half was bounded. That was
+  accidentally safe until core accumulated earlier history than Windsor originally had, at
+  which point the halves overlapped: **93 duplicated dates in `analytics_ga_daily_totals`, 98
+  duplicated keys in `ads_meta_placement_daily`**, double-counting every SUM over the affected
+  range. Caught because Meta's 2026-03-31 spend read €72.02 against a true €36.01. Both sides
+  of all three unions are now explicitly bounded; duplicates verified zero on the natural key.
+- **The rename/OID trap struck a second time** — renaming the Meta legacy table silently
+  repointed `analytics_freshness` at it again, exactly as migration 025 warned. Rebound.
+
 ## v1.7.0 — 2026-09-16
 
 - **Durable `core` layer between Windsor and reporting** (migrations 022/023). Windsor treats

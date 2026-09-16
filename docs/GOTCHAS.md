@@ -200,3 +200,17 @@ actually contained.
 **After any rename-and-replace-with-a-view, recreate every dependent view** and check
 `pg_get_viewdef()` to confirm what it really references. Grep for the `_legacy` suffix in view
 definitions as a quick tell.
+
+**In a UNION ALL of two sources, bound BOTH halves — a filter on one side is a coincidence,
+not a boundary.** Every contract view here is `legacy WHERE date <= B` UNION ALL `core`. The
+legacy half was bounded and the core half was not, which was accidentally safe only while the
+core table happened to start after B. It stopped being safe the moment core accumulated
+earlier history than the vendor's staging table originally had — and the durable-copy layer
+exists precisely so core's range CAN grow independently.
+
+Result on 2026-09-16: 93 duplicated dates in `analytics_ga_daily_totals` and 98 duplicated
+keys in `ads_meta_placement_daily`, live, double-counting every SUM over the affected range.
+Spotted because Meta's 2026-03-31 spend read €72.02 against a true €36.01 — exactly doubled.
+
+Always write both sides (`legacy WHERE date <= B` / `core WHERE date >= B+1`), and assert
+zero duplicates on the natural key after any change to either side's range.

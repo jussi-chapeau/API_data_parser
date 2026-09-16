@@ -13,7 +13,7 @@ Last verified: 2026-09-16
 | Reference Data Sync (hubs weekly) | D62F3xpZ443ZFUwa | Weekly Mon 02:00 | Active |
 | Backfill (manual, full history) | JH2On4vSuJidzbyU | Manual + webhook | Active |
 | Ads Google Daily Sync (last 30 days) | CZbzvcmagNxvC1JN | ~~Daily 05:00~~ | **DEACTIVATED 2026-09-16** — migrated to Windsor. Wrote `ads_google_campaign_daily`, now a view over `core`. Do not re-enable. |
-| Ads Meta Daily Sync (last 30 days) | vuQOMC0tnTaZkMTC | Daily 05:00 | Active but **producing no data since 2026-09-02** — reports `success` nightly while re-stamping old rows. Migrate to Windsor first (workstream I item 2). |
+| Ads Meta Daily Sync (last 30 days) | vuQOMC0tnTaZkMTC | ~~Daily 05:00~~ | **DEACTIVATED 2026-09-16** — migrated to Windsor. Wrote `ads_meta_placement_daily`, now a view over `core`. Do not re-enable. |
 | Analytics GA Daily Sync | j4gatZqXaw9tk55x | ~~Daily 06:00~~ | **DEACTIVATED 2026-09-14** — Supermetrics retired. It wrote `analytics_ga_daily_*`, which is now a view over Windsor; leaving it active would fail nightly against a non-updatable view. Do not re-enable. |
 | Orders Reconcile (bidirectional) | ur0vJrdAnHaCNhcF | Daily 04:30 | Active — **never deletes.** Supabase-only rows → `pending` candidates for human approval; Backoffice-only rows → re-upserted automatically (additive, safe). Both drift counts logged each run. See `docs/STATUS.md` workstreams G + H. |
 
