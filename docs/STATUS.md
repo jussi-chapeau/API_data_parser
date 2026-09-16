@@ -6,7 +6,7 @@ whoever starts a session reads it first, before assuming what's done vs. pending
 
 Update this file, don't create a new one — one canonical status doc avoids drift.
 
-**Last updated:** 2026-09-14
+**Last updated:** 2026-09-16
 
 **Ad-hoc production items closed out, outside the lettered workstreams below** — full detail
 in `CHANGELOG.md` and `docs/GOTCHAS.md`, not duplicated here: a ~2-day silent Supabase-key
@@ -840,6 +840,26 @@ the stale list. So `average_session_duration`, `user_conversion_rate`, `ecommerc
 and `transactions` exist but are NULL. Two are unread by the consumer; the other two are the
 diagnostic for whether GA4 purchase tracking is genuinely broken. When they populate, update
 the Windsor-era SELECT in the view to read them directly and drop `conversions_purchase`.
+
+**2026-09-16 — all three sources live, and a durable layer added after a real data loss:**
+- [x] Three Windsor tasks correctly configured: GA4 (#564), Google Ads (#577), Meta (#578),
+      each writing to its own table. Getting there was messy: two duplicate GA4 tasks, both
+      ad tasks silently pointed at `ga4_daily_totals` (which is how 15 stray ad columns got
+      ALTERed into it), and Windsor's undocumented **3-column limit on Columns to Match**,
+      which forced Meta down from placement grain to
+      `(date, campaign_id, publisher_platform)` — keeping the Facebook/Instagram split and
+      dropping position/device, which nothing reports on.
+- [x] **A month of production GA4 data was deleted and restored** (2026-08-17..09-15).
+      Recoverable only because of a speculative snapshot. That is luck, not a control.
+- [x] **Durable core layer** (migrations 022/023) — the fix for that class of failure.
+      `windsor.*` → `core.*` (merge-only, never deleted) → `public.*` views, refreshed every
+      30 min by pg_cron. Both safety properties tested live, not assumed: a deletion in
+      staging leaves core intact, and a NULL from staging does not erase a real value.
+      The contract view now reads `core`, and the switch was invisible to the consumer —
+      715 rows, zero gaps, every spot value unchanged.
+- [x] Validation so far is strong: every *complete* month matches the legacy feed exactly —
+      Google Ads March (EUR 2,377.42 / 2,856 clicks) and September (EUR 4,777.35 / 4,435
+      clicks) to the cent; Meta April, May, August, September likewise.
 
 **Remaining — see the migration to-do list handed to Jussi 2026-09-14.** Headlines: Meta is
 dead since 09-02 and is the urgent one; Google Ads is healthy (through 09-13) so it moves

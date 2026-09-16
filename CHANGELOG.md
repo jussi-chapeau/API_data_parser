@@ -15,6 +15,29 @@ vX.Y.Z" vs. "BI Chatbot vX.Y.Z". Scheme (SemVer-ish, no public API so read loose
 Versions before 2026-08-08 are reconstructed retroactively from `git log` for continuity,
 not tagged at the time.
 
+## v1.7.0 — 2026-09-16
+
+- **Durable `core` layer between Windsor and reporting** (migrations 022/023). Windsor treats
+  its destination tables as a rolling window it owns — it deletes rows outside
+  `Backfill data for`, replaces rows wholesale, and rewrites whatever table a task points at.
+  With the contract views reading staging directly, a misconfigured task **deleted a month of
+  production GA4 data** (2026-08-17..09-15) earlier the same day; it was recoverable only
+  because a snapshot had been taken speculatively that morning.
+  Now: `windsor.*` (volatile) → `core.*` (**merge-only, never deleted**) → `public.*` views,
+  refreshed every 30 min by pg_cron. Both safety properties were tested live rather than
+  assumed: deleting a row from staging leaves core intact, and a NULL from staging does not
+  overwrite a real value (`COALESCE(EXCLUDED.col, core.col)` — which matters because a
+  narrowed field list silently sends NULLs). The view switch was invisible to the consumer:
+  715 rows, zero gaps, every spot value unchanged.
+- **All three Windsor sources live** — GA4 (#564), Google Ads (#577), Meta (#578), each to its
+  own table. Along the way: two duplicate GA4 tasks, both ad tasks silently pointed at the GA4
+  table, and Windsor's undocumented **3-column cap on Columns to Match**, which forced Meta
+  from placement grain down to `(date, campaign_id, publisher_platform)` — keeping the
+  Facebook/Instagram split, dropping position/device detail that nothing reports on
+  (migration 021).
+- Validation so far: every complete month matches Supermetrics exactly — Google Ads March
+  (€2,377.42 / 2,856 clicks) and September (€4,777.35 / 4,435 clicks) to the cent.
+
 ## v1.6.0 — 2026-09-14
 
 - **Ended a five-week GA4 reporting outage.** The GA4 sync stopped producing new data on

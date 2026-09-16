@@ -166,3 +166,21 @@ while delivering nothing. `public.analytics_freshness` exposes both side by side
 (`data_age_days` vs `false_freshness_days`) precisely so the gap stays visible, and the
 `Data Freshness Watchdog` workflow alerts on the former. Generalises beyond marketing data:
 any upsert-only pipeline with a `synced_at` column can fail this way.
+
+**A vendor's staging table is not a system of record — copy it somewhere you own.** Windsor.ai
+treats its destination tables as a rolling window IT manages: it deletes rows that fall outside
+`Backfill data for`, replaces rows wholesale rather than merging, and will rewrite whatever
+table a task points at. On 2026-09-16 two ad tasks were accidentally pointed at
+`windsor.ga4_daily_totals` and a month of production GA4 data (08-17..09-15) vanished. It was
+only recoverable because a snapshot had been taken that morning on a hunch — which is luck,
+not a control.
+
+Fixed with a durable layer (migration 022): `windsor.*` (volatile, vendor-owned) → `core.*`
+(ours, **merge-only, never deleted**) → `public.*` views. Two properties make it work, and both
+were tested empirically rather than assumed: **deletions do not propagate** (a row removed from
+staging stays in core), and **NULLs never overwrite values** (`COALESCE(EXCLUDED.col, core.col)`,
+so a narrowed field list cannot silently erase history — which nearly happened repeatedly while
+configuring these tasks). Refreshed every 30 min by pg_cron.
+
+Generalises: any time a third party writes directly into a table your reporting reads, their
+mistakes become your outage instantly. Put a layer you control in between.
