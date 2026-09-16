@@ -15,6 +15,28 @@ vX.Y.Z" vs. "BI Chatbot vX.Y.Z". Scheme (SemVer-ish, no public API so read loose
 Versions before 2026-08-08 are reconstructed retroactively from `git log` for continuity,
 not tagged at the time.
 
+## v1.9.0 — 2026-09-16
+
+- **GA4 source + geo restored** (migrations 028–031), bringing back `bi_website_report`'s
+  breakdowns and the dashboard traffic-source chart, dead since 2026-08-10. **The Supermetrics
+  migration is now complete** — five feeds live on Windsor, all three Supermetrics workflows
+  off, everything reading through the durable `core` layer.
+- **Geo validated exact** against legacy for March–July (3,217 / 5,492 / 6,248 / 6,020 /
+  6,304 sessions). Needed two shape changes: `region` dropped (Windsor caps match columns at
+  3, and an unrequested dimension is aggregated away rather than colliding on GA4's `(not set)`
+  bucket), and the key reduced to `(date, city, country)`.
+- **Source needed a dimension change, and it shifts the numbers.** GA4 rejects
+  attribution-scoped `source_medium` alongside session metrics, so the feed uses
+  `session_source_medium` — which reads **~11% lower**. Boundary deliberately placed at
+  2026-08-10/11, where the old sync died, so the change coincides with the feed change rather
+  than creating a step mid-history. Documented on the view.
+- **Corrected the handover's GA4 purchase finding.** It reported 1 purchase against 254 orders
+  (0.4%) and concluded tagging was broken — but that came from `conversions_purchase`, which
+  isn't a real GA4 field and returns zeros. With valid fields: **148 against 3,052 = 4.8%**.
+  Still too sparse to build a funnel on, so the practical conclusion holds; the magnitude
+  didn't.
+- Windsor API key (exposed in screenshots 09-14) rotated.
+
 ## v1.8.0 — 2026-09-16
 
 - **Meta cut over to Windsor** (migration 026). Boundary is **2026-03-31, not 03-16**, and the

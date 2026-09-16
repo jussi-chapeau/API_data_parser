@@ -861,6 +861,33 @@ the Windsor-era SELECT in the view to read them directly and drop `conversions_p
       Google Ads March (EUR 2,377.42 / 2,856 clicks) and September (EUR 4,777.35 / 4,435
       clicks) to the cent; Meta April, May, August, September likewise.
 
+**Supermetrics migration COMPLETE 2026-09-16.** All five feeds live on Windsor, all three
+Supermetrics workflows deactivated, everything reading through the durable `core` layer:
+
+| Contract view | Rows | Coverage | Age |
+|---|---|---|---|
+| `analytics_ga_daily_totals` | 622 | 2025-01-01..2026-09-14 | 2d |
+| `analytics_ga_daily_source` | 5,642 | 2025-01-01..2026-09-16 | 0d |
+| `analytics_ga_daily_geo` | 12,458 | 2025-01-01..2026-09-16 | 0d |
+| `ads_google_campaign_daily` | 4,947 | 2024-08-05..2026-09-16 | 0d |
+| `ads_meta_placement_daily` | 3,505 | 2025-07-31..2026-09-02 | 14d (account paused) |
+
+Three findings worth carrying forward:
+- **GA4 purchase tracking is NOT dead.** The handover reported "1 purchase against 254 orders"
+  (0.4%) and concluded tagging was broken. That number came from `conversions_purchase`, which
+  does not exist in Windsor's GA4 catalogue and returns zeros. With valid fields
+  (`ecommerce_purchases`/`transactions`): **148 purchases against 3,052 orders = 4.8%**, 12x
+  higher. Still too sparse for funnel analysis, so the practical conclusion stands — but the
+  magnitude was wrong.
+- **The traffic-source dimension CHANGED at 2026-08-10.** GA4 rejects attribution-scoped
+  `source_medium` alongside session metrics, so the new feed uses `session_source_medium` and
+  reads ~11% lower. Comparing source totals across that date compares two different
+  measurements. The boundary was deliberately placed where the old sync died so the change
+  coincides with the feed change rather than sitting mid-history.
+- **Windsor under-reports history containing deleted campaigns.** Meta's "Waitlist" (EUR 248.81)
+  is absent entirely; the Marketing API excludes deleted campaigns. Legacy tables are the only
+  record. This is why the Meta boundary is 2026-03-31 rather than 03-16.
+
 **Remaining — see the migration to-do list handed to Jussi 2026-09-14.** Headlines: Meta is
 dead since 09-02 and is the urgent one; Google Ads is healthy (through 09-13) so it moves
 last, on its own schedule; the 08-11..08-14 GA4 gap needs a Windsor backfill; the Windsor API

@@ -84,8 +84,8 @@ from column names. No individual-level data reaches Supabase through it today.
 cannot see `orders` or anything else in `public`. Confirmed by the grant setup in the
 handover doc.
 
-**Housekeeping:** the Windsor API key appeared in screenshots shared 2026-09-14 and should be
-rotated — tracked as a to-do, not yet done.
+**Housekeeping:** the Windsor API key appeared in screenshots shared 2026-09-14. **Rotated
+2026-09-16** — the exposed key is no longer valid.
 
 ## Open issues
 
@@ -166,3 +166,10 @@ API response on the date given.
   individual-level data before recording it as safe. Supermetrics GA4 workflow deactivated.
   Also added `analytics_freshness` + a watchdog: unrelated to PII, but it closes a monitoring
   gap that let a data feed sit broken for five weeks unnoticed.
+- **2026-09-16** — Windsor migration completed for GA4 (totals/source/geo), Google Ads and
+  Meta; all three Supermetrics workflows deactivated. Added a durable `core` layer between
+  the vendor's staging tables and reporting, after a misconfigured vendor task deleted a
+  month of production data. Windsor API key (exposed in screenshots 09-14) rotated.
+  No change to what personal data is carried: all feeds remain day-level aggregates, with
+  geography at city/country grain — `region` was dropped, so the new feed is slightly
+  *coarser* than the Supermetrics one it replaces.
