@@ -214,3 +214,21 @@ Spotted because Meta's 2026-03-31 spend read €72.02 against a true €36.01 �
 
 Always write both sides (`legacy WHERE date <= B` / `core WHERE date >= B+1`), and assert
 zero duplicates on the natural key after any change to either side's range.
+
+**Verifying a view migration on names and row counts is not enough — check TYPES.** Cutting the
+marketing feeds over to Windsor preserved every column name, order and row count, and all of
+that verified clean. Five columns still silently widened from `integer` to `numeric`, because
+the Windsor staging tables are numeric throughout and a `UNION ALL` resolves to the wider type.
+That broke casting code in apukuski-bi-chatbot, and **no amount of freshness monitoring could
+have caught it** — the data was perfectly fresh; only the shape changed.
+
+Two traps inside the fix. `CREATE OR REPLACE VIEW` **cannot change a column's type**
+("cannot change data type of view column") — the view must be dropped and recreated, along with
+anything depending on it, which is best done as one multi-statement call so readers never see a
+missing view. And where the legacy half aggregates, `SUM(integer)` returns `bigint`, so **both**
+halves need casting; fixing only the new side leaves the type wrong while looking fixed.
+
+`public.schema_contract_drift` now compares every contract view against a frozen record of
+name, ordinal position and type (`core.schema_contract`). Empty means the contract holds; any
+row is a break a consumer will hit. Check it after any view change — and update the frozen
+contract only when a change is intended and agreed, never to silence drift.

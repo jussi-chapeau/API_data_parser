@@ -15,6 +15,28 @@ vX.Y.Z" vs. "BI Chatbot vX.Y.Z". Scheme (SemVer-ish, no public API so read loose
 Versions before 2026-08-08 are reconstructed retroactively from `git log` for continuity,
 not tagged at the time.
 
+## v1.10.0 — 2026-09-17
+
+- **Fixed five column types the migration silently changed**, reported by apukuski-bi-chatbot.
+  `analytics_ga_daily_source.engaged_sessions`, `ads_google_campaign_daily.impressions/clicks`
+  and `ads_meta_placement_daily.impressions/link_clicks` had widened `integer` → `numeric`,
+  breaking casting code downstream. Cause: Windsor staging is numeric throughout and a
+  `UNION ALL` resolves to the wider type; I cast some columns and missed these. **The cutover
+  was verified on names, order and row counts — not types**, which is exactly the gap a by-eye
+  check leaves.
+- **Added `public.schema_contract_drift`** so this class of break is detectable. Compares every
+  contract view against a frozen record of column name, ordinal position and type
+  (`core.schema_contract`). Empty = contract holds. Freshness monitoring could never have
+  caught this: the data was fresh, only the shape changed.
+- **GA4 conversion-type breakdown live** (migrations 032–034) via an N8N pull from Windsor's
+  connector API, since the plan caps destination tasks at 5 and all five are in use. It shows
+  **95% of "conversions" are `add_to_cart` (44,112) and `session_start` (7,329)**, both flagged
+  as key events; genuine intent events total ~757. The fix is in GA4's config, not the
+  pipeline.
+- **Revoked stray `anon`/`authenticated` grants** on the `windsor` and `core` schemas — 7 tables
+  each. Unusable today (no schema USAGE) but RLS is deliberately off on those tables, so one
+  config change away from public exposure.
+
 ## v1.9.0 — 2026-09-16
 
 - **GA4 source + geo restored** (migrations 028–031), bringing back `bi_website_report`'s
