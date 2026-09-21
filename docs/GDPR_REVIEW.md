@@ -4,7 +4,7 @@
 or be copied outside its intended store. Living document — see `CLAUDE.md` for when to
 update it.
 
-**Owner:** Jussi. **Last full review:** 2026-09-14.
+**Owner:** Jussi. **Last full review:** 2026-09-21.
 
 ---
 
@@ -26,13 +26,14 @@ actually delete.
 
 | Source → destination | Personal data present | Status |
 |---|---|---|
-| Backoffice `/order`, `/manual-order` → `orders` | `stops` (customer street addresses), `manual_data.customer` (name/email/phone), `review` (free text), `userId` | 🟡 Synced in full — see Open issue #1 |
+| Backoffice `/order`, `/manual-order` → `orders` | `stops` — **since 2026-09-21 a structured array, not a flat string**: per-stop street address, **apartment number**, lat/long coordinates, and on some orders **contact name and phone**. Also `manual_data.customer` (name/email/phone), `review` (free text), `userId` | 🟡 Synced in full — see Open issues #1 and #5 |
 | Backoffice `/hub`, `/route` → `hubs`, `routes` | None (hub/partner reference data) | ✅ Not a concern |
 | Stripe → `payments_stripe` | **None** — `raw_payload` allowlisted at sync time; no cardholder/customer name/email/address | ✅ Verified live 2026-08-12/13 |
 | Paytrail → `payments_paytrail` | **None now** — was storing `cardInfo` (BIN, last-4, country) verbatim until 2026-08-13; fixed with an allowlist and existing rows cleaned | ✅ Fixed + verified 2026-08-13 |
 | ~~Supermetrics~~ → `ads_*`, `analytics_ga_*` | Aggregate only | ⚪ Being retired — GA4 leg switched off 2026-09-14, ads legs pending |
 | **Windsor.ai** → `windsor.*` → `analytics_ga_daily_totals` view | **None** — verified live 2026-09-14, every column is a day-level aggregate (`sessions`, `totalusers`, `newusers`, `screen_page_views`, `bounce_rate`, `conversions`, `conversions_purchase`). No user ids, no client ids, no individual-level rows. | ✅ New sub-processor, see below |
 | `orders` → **deletion backups** (`backups/deleted_orders/*.json`) | Full order rows, **including `stops`** | 🟡 See "Deletion backups" below — the reason this file exists |
+| **Statistics Finland (Paavo WFS)** → `geo.paavo_area` | **None** — open public statistics about postcode *areas*, never about people. Verified against the live 2026 layer: every column is an area-level aggregate, and Statistics Finland itself withholds figures for areas too small to publish (91 of 3,018 areas). No inbound personal data; nothing about Apukuski is sent outward — the WFS request carries no customer data, only a layer name. | ✅ New source 2026-09-21 |
 
 ---
 
@@ -113,6 +114,36 @@ pipeline was built to close stays open in practice.
 identifier, not directly identifying, but it is the join key that would make customer-level
 profiling possible. Tracking only; no action needed unless it starts being used that way.
 
+### 🟡 #5 — `orders.stops` gained contact name, phone and apartment number (2026-09-21)
+The Backoffice API changed `/order`'s `stops` from a flat address string to a structured array
+around 2026-08. Because the scheduled syncs only touch a rolling 45-day window, ~6,300 older
+orders were still holding the truncated string. `scripts/repair_stops_structure.py` refreshed
+them from the API so that customer-area segmentation had coordinates to work with.
+
+**That repair widened what Supabase holds.** Counted against the live table afterwards:
+
+| Now present in `orders.stops` | Orders |
+|---|---:|
+| apartment number | 5,854 |
+| phone number | 2,156 |
+| contact name | 2,121 |
+| email | 1 |
+
+Roughly 2,100 orders gained a contact name and phone that were **not previously in Supabase at
+all**. Street address + apartment + a moving date identifies a specific dwelling and household —
+issue #9 in the BI repo's review already rates an address plus a moving date as higher-risk than
+a customer name, and this makes that more true, not less.
+
+**Nothing in this repo reads name or phone from `stops`.** The segmentation needs `address`,
+`location` and `apartment` only. An allowlist sanitiser at sync time — the pattern already used
+for `payments_stripe` and `payments_paytrail`, where an unexpected future field is excluded by
+default — would strip name/phone/email and leave the pipeline fully functional with materially
+less personal data retained.
+
+**Decision 2026-09-21 (Jussi): left as-is for now**, recorded here rather than actioned. Revisit
+if the retention question in #1 is taken up, since the two are the same decision at different
+scopes.
+
 ### ⚪ #4 — Infrastructure regions
 Supabase is confirmed **EU (Frankfurt, eu-central-1)** — seen directly in the project
 dashboard 2026-08-12. N8N Cloud's processing region and the Backoffice API's own hosting are
@@ -173,3 +204,27 @@ API response on the date given.
   No change to what personal data is carried: all feeds remain day-level aggregates, with
   geography at city/country grain — `region` was dropped, so the new feed is slightly
   *coarser* than the Supermetrics one it replaces.
+- **2026-09-21** — Customer-area segmentation, stage 1. Added **Statistics Finland (Paavo)** as
+  a reference data source (migration 036, `scripts/load_paavo.py`): 3,018 postcode areas with
+  geometry and area-level statistics. Carries no personal data in either direction, and sends
+  nothing about Apukuski outward. Loaded into a **new `geo` schema deliberately kept outside
+  `core`**, because migration 022's `ALTER DEFAULT PRIVILEGES` would otherwise grant the BI
+  consumer SELECT on any new `core` table automatically — verified after loading that `geo` has
+  no grants beyond `postgres`.
+  Also recorded, not fixed: **Open issue #5**, the contact name/phone/apartment that entered
+  `orders.stops` via the 2026-09-21 structural repair. Quantified against the live table rather
+  than estimated. Jussi's decision was to leave it for now.
+  Still outstanding before the consumer-facing views are built: a documented
+  **legitimate-interest basis** for area segmentation (a new purpose for existing data), and
+  the narrowing of `bi_chatbot_readonly`'s SELECT on `public.orders` — until that lands, any
+  k-anonymity claim about a segmentation view is defeated by reading the underlying table.
+  Stages 2–3 completed the same day (migrations 037–042). Two things worth recording here:
+  **`geo.stop_resolution` is a new store of location data**, but a deliberately minimal one —
+  postal code and a salted address hash per stop, no coordinates, no address text, no contact
+  details. Unlike `orders`, it *can* carry a retention policy, because nothing downstream needs
+  the postcode once the area label is bound; dropping it after binding would make this feature a
+  net reduction in retained personal data. Proposed, not yet implemented.
+  Also: `ALTER DEFAULT PRIVILEGES IN SCHEMA core REVOKE SELECT ... FROM bi_chatbot_readonly`
+  was applied (migration 039). It changes no existing grant, so it cannot break the BI repo —
+  it only closes the trapdoor where a future `core` table becomes consumer-readable with no
+  grant line in the migration for a reviewer to notice.

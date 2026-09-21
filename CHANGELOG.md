@@ -15,6 +15,72 @@ vX.Y.Z" vs. "BI Chatbot vX.Y.Z". Scheme (SemVer-ish, no public API so read loose
 Versions before 2026-08-08 are reconstructed retroactively from `git log` for continuity,
 not tagged at the time.
 
+## v1.11.0 — 2026-09-21
+
+- **Repaired `orders.stops` for 6,281 orders.** The Backoffice API changed `/order`'s `stops`
+  from a flat address string to a structured array (address, coordinates, apartment, floor)
+  around 2026-08, but the scheduled syncs only touch a rolling 45-day window — so every order
+  last synced before the change kept the truncated string permanently. Nothing was lost at
+  source; the API still returns the array form for 2024 orders. `scripts/repair_stops_structure.py`
+  refreshes `stops` only, day by day with backoff, and only ever widens (array from API, and not
+  already an array) so an unreadable day is skipped rather than blanking a row.
+  **This is why postcode coverage was measured at 38.8% and is actually 90.4%** — we were
+  measuring what we had stored, not what the source offers.
+- **Added Statistics Finland (Paavo) as a reference source** — migration 036 and
+  `scripts/load_paavo.py`. 3,018 postcode areas with geometry and area-level statistics, loaded
+  into a new `geo` schema. PostGIS 3.3.7 enabled in `extensions`, not `public`, to avoid
+  widening the PostgREST surface by ~1,000 functions.
+  - **`-1` is Paavo's "withheld" marker, not a missing value** — 74 areas for personal median
+    income, 188 for household. Loaded verbatim they would have sorted into the *bottom income
+    band* and been reported as our poorest customer areas. Mapped to NULL and flagged
+    `paavo_suppressed`; 0 is left alone because 17 areas really are uninhabited.
+  - `geo` is deliberately **outside `core`**: migration 022's `ALTER DEFAULT PRIVILEGES` grants
+    `bi_chatbot_readonly` SELECT on any table added to `core`, with no grant line in the
+    migration for a reviewer to spot. Verified after loading that `geo` has no grants beyond
+    `postgres`.
+  - Verified: 3,018 areas, 0 invalid geometries, 0 missing geometry, CRS read from the WFS
+    response rather than assumed, and a point-in-polygon test resolving Helsinki central station
+    to 00100.
+- **Service taxonomy as data** (migrations 037–038). Platform orders use 8 tidy `order_type`
+  values; manual orders are free text with 811 distinct ones. Classification lives in
+  `geo.service_rule` (first match by priority, catch-all at 9999) with one review row per
+  *distinct string* rather than per order, so a correction is an INSERT and not a migration.
+  Reading the real tail rather than guessing at it cut unclassified from 607 orders to **292,
+  190 of which have an empty `order_type`** — deliberately left unclassified, along with driver
+  availability notes and test junk, rather than absorbed into a bucket that looks resolved.
+- **Stop resolution** (migration 039). `geo.stop_resolution` stores a postal code and a salted
+  address hash per stop — no coordinates, no address text, no contact details. Platform stops
+  resolve by point-in-polygon; manual orders fall back to a 5-digit postcode validated against
+  the Paavo postcode universe. Uses the API's own `role` field (`pickup`/`delivery`) rather than
+  inferring from array position, and `ST_Intersects` rather than `ST_Contains` so addresses on a
+  postcode boundary don't silently become `unknown`.
+- **Facility detection by address frequency** (migration 040). The top reused addresses are used
+  91, 76 and 73 times, delivery-only, across two or three services — which per-service rules
+  miss and frequency catches. Threshold set at 11 uses (32 addresses, ~4% of stops), deliberately
+  conservative: an attempt to separate depots from large apartment blocks by counting distinct
+  apartment values **was measured and did not discriminate**, so the ambiguous 6–10 band is left
+  in rather than discarding real customers.
+- **Per-order binding** (migration 041) with four distinct sentinels — `unknown` (tried, failed),
+  `not_applicable` (that end isn't a customer), `excluded` (business/freight), `withheld`
+  (social-services moves, counted but never crossed with an income band). Ends are deduplicated
+  on address, so carry help (98.3% same address on both stops) contributes one customer end
+  without a special case. **12,095 binding rows = 12,095 non-cancelled orders**, exactly.
+- **Income bands fixed to be household-weighted** (migration 042). The first pass cut quintiles
+  per *area*, which put **31.2% of Finland's population in "q1_lowest"** — 2,297 of 3,018 Paavo
+  areas are rural, and rural areas have higher *household* income while dense urban areas look
+  poor because so many households are one person. Our customers are urban, so 4,155 orders piled
+  into a band mislabelled as poor. Caught by the output looking implausible, not by review.
+  Re-cut weighted by household count (each band now 19.8–20.2% of households), the distribution
+  is even and the move vector is near-symmetric (up 546 / down 537 / lateral 903).
+
+**Coverage: 90.8% of segmentation-eligible orders now resolve to a real postcode area** —
+against the 38.8% first measured, which was measuring what we had stored rather than what the
+source offers.
+
+- No consumer-facing change yet. The published segmentation views remain gated on a documented
+  legitimate-interest basis and on narrowing `bi_chatbot_readonly`'s SELECT on `public.orders`
+  — see `docs/GDPR_REVIEW.md`.
+
 ## v1.10.0 — 2026-09-17
 
 - **Fixed five column types the migration silently changed**, reported by apukuski-bi-chatbot.
