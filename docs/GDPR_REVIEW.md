@@ -33,6 +33,7 @@ actually delete.
 | ~~Supermetrics~~ → `ads_*`, `analytics_ga_*` | Aggregate only | ⚪ Being retired — GA4 leg switched off 2026-09-14, ads legs pending |
 | **Windsor.ai** → `windsor.*` → `analytics_ga_daily_totals` view | **None** — verified live 2026-09-14, every column is a day-level aggregate (`sessions`, `totalusers`, `newusers`, `screen_page_views`, `bounce_rate`, `conversions`, `conversions_purchase`). No user ids, no client ids, no individual-level rows. | ✅ New sub-processor, see below |
 | `orders` → **deletion backups** (`backups/deleted_orders/*.json`) | Full order rows, **including `stops`** | 🟡 See "Deletion backups" below — the reason this file exists |
+| **Airtable `Palautteet`** → `core.feedback` → `public.customer_feedback` | **Email deliberately NOT synced** — `Sähköposti` holds a real address on 1,342 of 1,344 source records and is dropped at ingest by an allowlist. Free-text comments ARE synced, scrubbed for emails/phones/addresses/IBANs. Measured before deciding: across 1,339 staff comments, 0 emails, 0 phones, 0 addresses, 2 personal names. Live sync applied 1 redaction across 1,344 rows. No order key exists on the source, so this cannot be joined to `orders`. | ✅ New source 2026-09-22 |
 | **Statistics Finland (Paavo WFS)** → `geo.paavo_area` | **None** — open public statistics about postcode *areas*, never about people. Verified against the live 2026 layer: every column is an area-level aggregate, and Statistics Finland itself withholds figures for areas too small to publish (91 of 3,018 areas). No inbound personal data; nothing about Apukuski is sent outward — the WFS request carries no customer data, only a layer name. | ✅ New source 2026-09-21 |
 
 ---
@@ -278,6 +279,17 @@ API response on the date given.
   that makes it defensible (no individual profiled, suppression in a view rather than
   application code, Paavo is data about places). Open issue #2 in this file therefore no longer
   blocks the published views; the remaining gate is the migration 044 cutover.
+- **2026-09-22 (later)** — Added **Airtable `Palautteet`** as a data source (migration 049,
+  `scripts/sync_airtable_feedback.py`): 1,344 customer feedback records. Design decisions taken
+  by Jussi and recorded here: customer **email dropped entirely** (nothing downstream needs it;
+  the Airtable record id is the key), free-text comments **synced with scrubbing**, and the
+  staff-opinion field **included** after measuring it rather than assuming — it contains 2
+  personal names in 1,339 comments and no emails, phones or addresses. Residual risk is
+  indirect rather than direct: with few partners per city a specific complaint could still point
+  at a worker, which is why no worker identifier is carried alongside the text.
+  The write path uses a `SECURITY DEFINER` RPC rather than exposing the `core` schema to
+  PostgREST, and the RPC is explicitly revoked from `anon`/`authenticated` — verified false for
+  both after applying. `public.customer_feedback` is granted to `bi_chatbot_readonly` only.
 - **2026-09-22** — Found the live `BACKOFFICE_API_KEY` hardcoded in ten tracked files in a
   **public** repository (new issue #6), while investigating an unrelated Airtable question.
   Logged, not actioned, at Jussi's direction. Also added a `conversions_caveat` column to the

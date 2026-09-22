@@ -47,6 +47,10 @@
 --     Key event count for begin_checkout   -> checkouts
 --     Key event count for purchase         -> purchases
 --     Key event count for whatsapp_click   -> whatsapp_clicks
+--   If you configure this through the Windsor API rather than the picker, the FIELD IDS are
+--   not the column names above: they are `checkouts` (or `conversions_begin_checkout`),
+--   `conversions_purchase` and `conversions_whatsapp_click`. `purchases` and `whatsapp_clicks`
+--   are rejected with unknown_field -- verified against the live connector 2026-09-22.
 --   7 metrics, 3 dimensions -- inside GA4's 10-metric cap, with room for one more.
 --
 -- TASK 2  source Google Ads  ->  windsor.ads_google_landing

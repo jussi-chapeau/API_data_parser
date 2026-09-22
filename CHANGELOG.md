@@ -40,6 +40,21 @@ not tagged at the time.
   out of the key — and Windsor caps "Columns to Match" at 3, which both keys use exactly.
   Tables created by us and handed to `windsor_writer` per migration 016. **Inert until two
   Windsor destination tasks are created;** field mapping is documented in the migration header.
+- **Customer feedback synced from Airtable** (migration 049, `scripts/sync_airtable_feedback.py`).
+  1,344 records from `Palautteet`. The table the link pointed at (`Feedback`) is empty — it has
+  an OrderID field and looks like the intended schema, but nothing was ever written to it, so
+  **feedback has no order key and cannot be joined to `orders`**: analysable by date, partner and
+  city only. Email dropped at ingest (1,342 of 1,344 records carried one); free text scrubbed,
+  which applied exactly 1 redaction across the whole table — matching the pre-build measurement.
+  281 test rows (`Testi lähetys…`, half of all filled Partner values) excluded via a lookup
+  table, and spelling variants collapsed (ELD/Eld Muutot Oy, Vilhi/Vilhi Oy, Saarela ±Oy).
+  Ships a `feedback_caveat` column because the response bias is the real trap: **CSAT is 5 for
+  88% of responses and only 57 sit below 4**, so a mean of 4.8 measures who answered, not how
+  the service went. Writes through a SECURITY DEFINER RPC rather than exposing `core` to
+  PostgREST, revoked from anon/authenticated.
+  Notable for marketing: `Mistä löysit meidät?` gives **self-reported attribution** — Google 578,
+  word-of-mouth 80, Muuttomaailma 75, repeat customers 51. Word-of-mouth plus repeat is ~12% of
+  respondents, which GA4 structurally cannot attribute.
 - **GA4 age/gender feeds** (migration 048), chosen over Google Ads demographics on measured
   coverage, not preference: Google Ads' demographic views carry only **€1,044 of €9,504 spend
   (11.0%)** and 49.1% of those clicks are `UNDETERMINED` — about 5.6% effective. GA4 covers
