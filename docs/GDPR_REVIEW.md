@@ -190,6 +190,37 @@ placeholder discipline was applied to the Supabase key and not to this one.
 
 Steps 2–3 are ready to do on request; step 1 is not something this repo can perform.
 
+### 🟡 #7 — Our own repair snapshot was BI-readable (found and closed 2026-09-22)
+`scripts/repair_stops_structure.py` wrote `public.orders_stops_backup_20260921` before the
+2026-09-21 repair — in-database rather than to a file, deliberately, because `stops` is PII and
+a file would be a second copy outside the trust boundary. That reasoning held. What was missed:
+**creating any table in `public` inherits Supabase's default privileges**, so the snapshot was
+immediately readable by `bi_chatbot_readonly`, `anon` and `authenticated`.
+
+Measured before revoking: 12,298 rows, 11,798 carrying stops text, containing **612 phone
+numbers, 9,738 address-like strings and 8 email addresses**.
+
+**This defeated migration 043 completely.** That migration removed `stops` from the BI
+consumer's reach and served a `housing_type` label instead — while a verbatim copy of the same
+column sat one table away, ungated. The pending revoke on `public.orders` (migration 044) would
+not have helped either.
+
+Revoked from every BI and PostgREST role in **migration 052**; only `postgres`/`service_role`
+retain access. **The snapshot itself is retained** — the repair is one day old and a rollback
+window is reasonable — but it is a fresh copy of exactly the data issue #1 is about and should
+be dropped once the repair is trusted. Deleting it is the owner's call, not this repo's.
+
+**Third occurrence of the same trapdoor** (033 for `windsor`/`core`, 043 for the reporting view,
+052 here). Every new object in `public` reopens it. A standing assertion — "no BI or PostgREST
+role may hold SELECT outside an allowlist" — would catch the next one; remembering has now
+failed three times.
+
+### ⚪ #8 — Other `public` tables readable by the BI role may hold personal data
+Noted while auditing #7, not investigated and **not actioned** — these belong to other
+workstreams: `leads`, `prospects`, `whatsapp_messages`, `orders_delete_candidates` are all
+SELECT-able by `bi_chatbot_readonly`. `whatsapp_messages` in particular sounds like message
+content. Worth the same column-level review `orders` received in migration 043.
+
 ### ⚪ #4 — Infrastructure regions
 Supabase is confirmed **EU (Frankfurt, eu-central-1)** — seen directly in the project
 dashboard 2026-08-12. N8N Cloud's processing region and the Backoffice API's own hosting are
