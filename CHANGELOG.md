@@ -40,6 +40,21 @@ not tagged at the time.
   out of the key — and Windsor caps "Columns to Match" at 3, which both keys use exactly.
   Tables created by us and handed to `windsor_writer` per migration 016. **Inert until two
   Windsor destination tasks are created;** field mapping is documented in the migration header.
+- **GA4 age/gender feeds** (migration 048), chosen over Google Ads demographics on measured
+  coverage, not preference: Google Ads' demographic views carry only **€1,044 of €9,504 spend
+  (11.0%)** and 49.1% of those clicks are `UNDETERMINED` — about 5.6% effective. GA4 covers
+  **92.0% of sessions** with 33.4% resolving to a real bucket, roughly six times better.
+  - **Age and gender are separate pulls, not crossed.** A single crossed table would have fit
+    Windsor's 3-column match cap exactly and saved a task slot, but testing it showed coverage
+    falling from 92% to 70.8%, only 17.0% fully known, and **the 35-44 band suppressed
+    entirely** by GA4's own thresholding. Not worth one slot.
+  - Long-format view (`dimension`/`bucket`) so `unknown` — 67% of age, 60% of gender — is a row
+    that cannot be dropped by accident rather than a missing column. Carries a
+    `demographic_caveat`: GA4 only resolves users signed in to Google with ad personalisation
+    on, so the known remainder skews older and more Android. The apparent age profile (55-64 and
+    65+ are 57% of *known* ages, for a moving company) most likely describes who Google can
+    identify, not who moves house — the same trap as the unweighted income quintiles in 042.
+  - Inert until two Windsor tasks exist; field mapping is in the migration header.
 - **Schema-contract drift check now derives its own scope** (migration 047). It had a hardcoded
   array of five view names inside the view body while expectations lived in
   `core.schema_contract` — so registering a new view produced 19 false "COLUMN REMOVED" rows,
