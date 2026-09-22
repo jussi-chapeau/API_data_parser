@@ -144,6 +144,51 @@ less personal data retained.
 if the retention question in #1 is taken up, since the two are the same decision at different
 scopes.
 
+**Update, same day — largely resolved for the BI consumer, not at source.**
+`public.orders_reporting` (migration 043) removes `stops` from `bi_chatbot_readonly`'s reach
+entirely, replacing it with a derived `housing_type` label. The BI repo's only live use of
+`stops` was a housing-type regex, so serving the label costs them nothing (0 mismatches across
+12,095 orders) and removes street addresses, apartment numbers, contact names and phone numbers
+from that service. The same view redacts `manual_data`'s `customer`, `additionalInfo` and
+`raw_charge_total` — **4,462 names, 3,613 emails, 4,036 phone numbers** that the BI repo had been
+blocking in application code only. The data still sits in `orders` itself, so this narrows
+exposure rather than closing #1.
+
+### 🔴 #6 — Live Backoffice API key committed to a PUBLIC GitHub repo (found 2026-09-22)
+**Not yet actioned. Logged at Jussi's direction 2026-09-22; the decision to defer is his.**
+
+`oz6Dcg…Mdi4` — the live value of `BACKOFFICE_API_KEY`, verified identical to the one in `.env`
+— is hardcoded in **ten tracked files**:
+
+| | |
+|---|---|
+| Scripts | `backfill_order_origin.py:24`, `reconcile_airtable_financials.py:29`, `verify_sync_counts.py:30`, `backfill_missing_months.py:38` |
+| Workflows | `orders-cool.json`, `orders-warm.json`, `backfill.json`, `routes-sync.json`, `reference-sync.json`, `paytrail-payment-callback-tracking.json` |
+
+Present since commit `ecfad66`. **`jussi-chapeau/API_data_parser` is PUBLIC** (confirmed via
+`gh repo view`, 2026-09-22).
+
+**Why this belongs in a GDPR file and not only a security note:** the key is not a nuisance
+credential. It authenticates `/order` and `/manual-order`, which return customer street
+addresses, apartment numbers, contact names and phone numbers for every order in the business.
+Anyone who has read this repository can retrieve the full order book. Under Art. 32 this is a
+failure of "appropriate technical measures", and if exploited it is a reportable breach — the
+32-hour clock would start from the moment misuse were detected, not from today.
+
+**This also directly violates `CLAUDE.md`**, which requires workflow JSON to carry the
+`SUPABASE_SERVICE_KEY`-style placeholder and injects secrets at import time, and states plainly:
+*"Never put secrets in files — including docs, workflow JSON committed to git, or chat."* The
+placeholder discipline was applied to the Supabase key and not to this one.
+
+**What actually fixes it, in order:**
+1. **Rotate the key in AWS.** Scrubbing the files does not help: the value is in git history and
+   in every fork and clone. Until it is rotated it stays valid.
+2. Update `.env` and the N8N credential.
+3. Replace all ten occurrences with an env lookup / placeholder, and add a pre-commit or CI
+   check so the next one fails loudly rather than shipping.
+
+Steps 2–3 are ready to do on request; step 1 is not something this repo can perform.
+
 ### ⚪ #4 — Infrastructure regions
 Supabase is confirmed **EU (Frankfurt, eu-central-1)** — seen directly in the project
 dashboard 2026-08-12. N8N Cloud's processing region and the Backoffice API's own hosting are
@@ -228,3 +273,25 @@ API response on the date given.
   was applied (migration 039). It changes no existing grant, so it cannot break the BI repo —
   it only closes the trapdoor where a future `core` table becomes consumer-readable with no
   grant line in the migration for a reviewer to notice.
+  **Legitimate-interest basis for area segmentation: confirmed by Jussi 2026-09-21**, recorded
+  as a dated controller decision in the BI repo's `docs/GDPR_REVIEW.md` together with the design
+  that makes it defensible (no individual profiled, suppression in a view rather than
+  application code, Paavo is data about places). Open issue #2 in this file therefore no longer
+  blocks the published views; the remaining gate is the migration 044 cutover.
+- **2026-09-22** — Found the live `BACKOFFICE_API_KEY` hardcoded in ten tracked files in a
+  **public** repository (new issue #6), while investigating an unrelated Airtable question.
+  Logged, not actioned, at Jussi's direction. Also added a `conversions_caveat` column to the
+  GA views (migration 045): GA4's `conversions` counts `session_start` and `add_to_cart` as key
+  events, so the BI portal and bot had been quoting a number that runs at 7–9 per session on
+  every source. No personal data involved, recorded here because it is a data-integrity control
+  of the same family as the suppression work.
+- **2026-09-21 (later)** — `public.orders_reporting` added (migration 043); see issue #5.
+  **A hole was opened and closed during this work, recorded because the class of it recurs:**
+  creating a view in `public` inherits Supabase's default privileges, so `anon` and
+  `authenticated` immediately held SELECT/INSERT/UPDATE/DELETE/TRUNCATE on it — and a Postgres
+  view runs as its *owner* unless told otherwise, so it would have read `orders` with RLS
+  bypassed (`orders` has RLS enabled with a policy). Fixed in the same migration with
+  `security_invoker = on` and an explicit `REVOKE ALL ... FROM anon, authenticated, PUBLIC`,
+  then re-verified: only `bi_chatbot_readonly` (SELECT) and `service_role` remain.
+  **Every new object in `public` reopens this.** Migration 033 PART 2 closed the same trapdoor
+  for `windsor`/`core`. Worth a standing assertion rather than remembering each time.

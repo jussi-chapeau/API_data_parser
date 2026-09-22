@@ -15,6 +15,40 @@ vX.Y.Z" vs. "BI Chatbot vX.Y.Z". Scheme (SemVer-ish, no public API so read loose
 Versions before 2026-08-08 are reconstructed retroactively from `git log` for continuity,
 not tagged at the time.
 
+## v1.12.0 — 2026-09-22
+
+- **GA4 `conversions` is not a conversion count, and now says so** (migration 045). The BI bot
+  reported "2,604 sessions, 19,076 conversions" for Google Ads — 7.3 per session — faithfully
+  from data whose underlying metric is meaningless. Measured over 35 days site-wide: 49,511
+  "conversions", of which **`add_to_cart` 49,447 and `session_start` 8,316**, both marked as GA4
+  key events. `session_start` as a key event makes the metric circular; `add_to_cart` at 5.9 per
+  session is the price calculator, not carts. Meanwhile **`purchase` fired 4 times against 538
+  real orders**. Every source reads 7–9 per session *including direct*, which is the tell.
+  - Added a `conversions_caveat` column to `analytics_ga_daily_source` and
+    `analytics_ga_daily_totals`. A column, not a `COMMENT`, because the consumer is an LLM whose
+    column descriptions come from a hardcoded dict in its own repo — a database comment would
+    never reach its prompt. Columns appended, so no existing ordinal moves.
+  - The real fix is unmarking those key events in the GA4 admin UI; no migration can do it.
+  - Also found: key events named `tarjouspyyntö_muutolle_lomake_lähetys`, `ph_one_lead`,
+    `varaus__sivu` and `oppaan_lataus_vahvistus` are **configured but have never fired** — the
+    lead tracking this business would actually want is absent.
+- **Landing-page feeds** (migration 046) — `windsor`/`core`/`public` for two new grains:
+  `analytics_ga_daily_landing` (where paid sessions actually land, with `begin_checkout_count`)
+  and `ads_google_landing_daily` (where campaigns are configured to point). Separate tables
+  because landing page is a dimension: adding it to an existing table would change its grain and
+  silently multiply every metric. `Landing page`, not `+ query string`, to keep gclid/UTM noise
+  out of the key — and Windsor caps "Columns to Match" at 3, which both keys use exactly.
+  Tables created by us and handed to `windsor_writer` per migration 016. **Inert until two
+  Windsor destination tasks are created;** field mapping is documented in the migration header.
+- **Schema-contract drift check now derives its own scope** (migration 047). It had a hardcoded
+  array of five view names inside the view body while expectations lived in
+  `core.schema_contract` — so registering a new view produced 19 false "COLUMN REMOVED" rows,
+  and, far worse, **a registered-but-unlisted view would have been silently unchecked while the
+  monitor reported clean.** Same failure shape as `analytics_freshness` monitoring the wrong
+  table after a rename (025, then 026 again). Scope is now `SELECT DISTINCT view_name FROM
+  core.schema_contract`, so registering a view is the only step needed to monitor it. 7 views
+  covered, up from 5; verified with a canary that it still detects a real break.
+
 ## v1.11.0 — 2026-09-21
 
 - **Repaired `orders.stops` for 6,281 orders.** The Backoffice API changed `/order`'s `stops`
@@ -77,9 +111,30 @@ not tagged at the time.
 against the 38.8% first measured, which was measuring what we had stored rather than what the
 source offers.
 
+- **`public.orders_reporting`** (migration 043) — narrows what `bi_chatbot_readonly` may read,
+  built from the BI repo's own column audit. Created and granted; the revoke on `public.orders`
+  is held back to migration 044 so the cutover doesn't break every `FROM orders` query at once.
+  - **`manual_data` is redacted in the database**, not by application regex: it holds 4,462
+    customer names, 3,613 emails and 4,036 phone numbers. The BI repo already blocked those
+    paths in `app/tools.py`, which is exactly what their own spec called insufficient. Revenue
+    over the view is identical to revenue over the table — 106,178,678 cents, 12,095 orders.
+  - **`stops` replaced by a `housing_type` label**, which was their ask and the best trade here:
+    it removes street addresses from that service's reach entirely. Replicates their
+    `_HOUSING_TYPE_CASE_SQL` byte for byte — **0 mismatches across all 12,095 orders**, same
+    15.5% coverage ceiling.
+  - **Caught and fixed a hole we opened doing it:** creating any object in `public` inherits
+    Supabase's default privileges, so `anon` and `authenticated` immediately had full DML on the
+    view — and a Postgres view defaults to running as its *owner*, which would have read `orders`
+    with RLS bypassed. Fixed with `security_invoker = on` and an explicit `REVOKE ALL`. Same
+    trapdoor migration 033 closed for `windsor`/`core`; it reopens for every new `public` object.
+- **Suppression sizing:** at k=10 the binding constraint turns out to be the time grain, not k.
+  Monthly rolls up 30% of the five-dimension end facts and 85% of recycling; quarterly gives 10%
+  and 36%; whole-period ~1%. Recommendation to BI is to keep k=10 and vary the period per
+  artefact rather than lower k.
+
 - No consumer-facing change yet. The published segmentation views remain gated on a documented
-  legitimate-interest basis and on narrowing `bi_chatbot_readonly`'s SELECT on `public.orders`
-  — see `docs/GDPR_REVIEW.md`.
+  legitimate-interest basis (now confirmed by Jussi and recorded in the BI repo) and on the
+  migration 044 cutover — see `docs/GDPR_REVIEW.md` and `docs/SEGMENTATION_HANDOVER_TO_BI.md`.
 
 ## v1.10.0 — 2026-09-17
 
