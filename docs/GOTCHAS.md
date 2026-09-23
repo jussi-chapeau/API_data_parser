@@ -19,8 +19,18 @@ normalizing looks like 100% mismatch.
 metrics use `order_state = DELIVERED`, `delivered_at`, or `first_schedule` — each gives
 different numbers. Label dashboards explicitly.
 
-**`/route` Lambda times out.** `GET /production/route` returns 504 even for small date windows.
-Routes sync and `routes` table population blocked upstream. `/hub` and chunked `/order` work.
+**`/route` Lambda times out.** ~~`GET /production/route` returns 504 even for small date
+windows.~~ **RESOLVED — verified 2026-09-23.** Measured: 1 day 1.1 s, 8 days 0.2 s, 30 days
+0.2 s, no failures, 25 routes returned. The backend fixed it at some point without the fix
+being noticed here, so this entry sat stale and the routes sync stayed written off.
+
+**Its replacement gotcha is worse, because it is silent.** `/route` sends `internalCost` in
+**EUROS** while `totalSales` is in **CENTS** — the only euro-unit field on the whole API.
+`public.routes.internal_cost` was an `integer` column with no unit in its name sitting next
+to cents, so `total_sales - internal_cost` was wrong by 100x, and the integer type rounded
+the decimals away on top (2515.43 EUR stored as 2515). Fixed in migration 056: store
+`internal_cost_cents`. The backend is renaming the field to `internalCostCents`, which has
+NOT shipped; `scripts/sync_routes.py` reads both shapes and records which one it saw.
 
 **Non-numeric manual `charge.charge` values.** Some manual orders store rates or free text
 (e.g. `"119e/h"`, `"119e/h + laatikot 3,20e/kpl"`). Parser must reject these for

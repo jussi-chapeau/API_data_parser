@@ -15,6 +15,35 @@ vX.Y.Z" vs. "BI Chatbot vX.Y.Z". Scheme (SemVer-ish, no public API so read loose
 Versions before 2026-08-08 are reconstructed retroactively from `git log` for continuity,
 not tagged at the time.
 
+## v1.13.0 — 2026-09-23
+
+- **Adopted the Backoffice `/route` contract** — spec stored at
+  `docs/api/BACKOFFICE_ROUTE_ENDPOINT.md`, migration 056, `scripts/sync_routes.py`.
+  - **`/route` is no longer blocked.** `CLAUDE.md` and `GOTCHAS.md` both recorded it as dead on
+    an upstream Lambda timeout. Measured: 1 day 1.1 s, 8 days 0.2 s, **30 days 0.2 s, zero
+    failures**. The backend fixed it at some point without anyone here noticing, so the sync
+    stayed written off. Both docs corrected.
+  - **The unit trap it leaves behind is worse, because it is silent.** `internalCost` is
+    **EUROS** while `totalSales` is **CENTS** — the only euro field on the API. Proven two ways:
+    the values carry decimals (3985.97, 786.3) so they cannot be integer cents, and read as
+    euros the cost is 82% of sales, which is a plausible partner cost, while read as cents it is
+    0.8%, which is not. `routes.internal_cost` was an `integer` with no unit in its name sitting
+    next to cents, so subtracting them was wrong by 100× *and* the integer type rounded the
+    decimals away (2515.43 € stored as 2515). Now stored as `internal_cost_cents`.
+  - **Two corrections sent back to the backend team.** Their spec says "the Supabase routes table
+    holds 0 rows" and uses that to argue dropping `internalCost` is safe — it holds **25 rows**.
+    And neither `internalCostCents` nor `?include=stops,orders` is in production yet; `include`
+    returns 400. The sync reads **both** contract shapes and records which it saw in
+    `contract_version`, so the cutover will be observable rather than assumed.
+  - **`anon` and `authenticated` held INSERT/UPDATE/DELETE/TRUNCATE on `public.routes`** — the
+    `public`-schema default-privilege trapdoor for the **fourth** time this week (033, 043, 052,
+    now 056). Revoked.
+  - `public.route_economics` published to the BI role, carrying a `route_cost_caveat`: internal
+    cost is free text staff copy from a partner invoice with **VAT status unverified**, so the
+    difference against VAT-inclusive `total_sales_cents` is not a margin. No per-order cost
+    allocation — the backend declined to invent a rule and neither does this repo.
+  - Backfilled 25 routes, 2026-08-05 → 2026-09-21.
+
 ## v1.12.0 — 2026-09-22
 
 - **GA4 `conversions` is not a conversion count, and now says so** (migration 045). The BI bot

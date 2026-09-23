@@ -67,7 +67,9 @@ See [`docs/GOTCHAS.md`](docs/GOTCHAS.md) for full entries. Critical ones:
 - **Platform orders**: `platform_fee` / `service_fee` are **excl. VAT** (net cents).
 - **Gig counts**: "Total gigs" = orders **created** in month (platform + manual). "Delivered"
   is a separate metric (`order_state`, `delivered_at`, or `first_schedule` — label each).
-- **`/route` endpoint**: upstream Lambda timeout — routes sync blocked until backend fixes.
+- **`/route` endpoint**: **fixed — no longer blocked** (verified 2026-09-23: 0.2 s for a 30-day
+  window, zero failures). **Its `internalCost` is EUROS while `totalSales` is CENTS** — never
+  subtract them raw. Contract: [`docs/api/BACKOFFICE_ROUTE_ENDPOINT.md`](docs/api/BACKOFFICE_ROUTE_ENDPOINT.md).
 - **Non-numeric manual totals** (e.g. `"119e/h"`): store `raw_charge_total`, leave
   `total_incl_vat_*` null.
 
@@ -77,7 +79,8 @@ See [`docs/GOTCHAS.md`](docs/GOTCHAS.md) for full entries. Critical ones:
 
 - Deploy Supabase Edge Functions (`n8n-trigger-sync`, `n8n-update-schedule`) for Lovable Run Now.
 - Add webhook trigger nodes to N8N workflows for manual runs from Lovable.
-- Fix `/route` Lambda so `routes` table populates.
+- Adopt `/route`'s `?include=stops,orders` per-order economics once the backend PR lands
+  (400s today); and get the VAT status of `internalCost` confirmed so margins become computable.
 - Optional: full manual-order charge breakdown from Backoffice API (currently accepted as out of scope).
 
 ---
