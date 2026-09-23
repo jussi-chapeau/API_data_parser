@@ -1,0 +1,221 @@
+month,theme,comments_mentioning,comments_total,share_pct
+2024-09,Ystävällisyys,3,4,75.0
+2024-09,Nopeus & täsmällisyys,2,4,50.0
+2024-09,Ammattitaito,2,4,50.0
+2024-09,Tehokkuus & reippaus,2,4,50.0
+2024-09,Helppous & sujuvuus,2,4,50.0
+2024-09,Huolellisuus,0,4,0.0
+2024-09,Joustavuus,0,4,0.0
+2024-09,Viestintä,1,4,25.0
+2024-09,Hinta,0,4,0.0
+2024-09,Luotettavuus,1,4,25.0
+2024-09,Avuliaisuus,1,4,25.0
+2025-01,Ystävällisyys,139,189,73.5
+2025-01,Nopeus & täsmällisyys,128,189,67.7
+2025-01,Ammattitaito,60,189,31.7
+2025-01,Tehokkuus & reippaus,65,189,34.4
+2025-01,Helppous & sujuvuus,59,189,31.2
+2025-01,Huolellisuus,14,189,7.4
+2025-01,Joustavuus,4,189,2.1
+2025-01,Viestintä,10,189,5.3
+2025-01,Hinta,9,189,4.8
+2025-01,Luotettavuus,18,189,9.5
+2025-01,Avuliaisuus,4,189,2.1
+2025-04,Ystävällisyys,39,72,54.2
+2025-04,Nopeus & täsmällisyys,41,72,56.9
+2025-04,Ammattitaito,29,72,40.3
+2025-04,Tehokkuus & reippaus,18,72,25.0
+2025-04,Helppous & sujuvuus,15,72,20.8
+2025-04,Huolellisuus,5,72,6.9
+2025-04,Joustavuus,3,72,4.2
+2025-04,Viestintä,4,72,5.6
+2025-04,Hinta,6,72,8.3
+2025-04,Luotettavuus,2,72,2.8
+2025-04,Avuliaisuus,4,72,5.6
+2025-05,Ystävällisyys,79,122,64.8
+2025-05,Nopeus & täsmällisyys,83,122,68.0
+2025-05,Ammattitaito,39,122,32.0
+2025-05,Tehokkuus & reippaus,37,122,30.3
+2025-05,Helppous & sujuvuus,48,122,39.3
+2025-05,Huolellisuus,16,122,13.1
+2025-05,Joustavuus,6,122,4.9
+2025-05,Viestintä,3,122,2.5
+2025-05,Hinta,14,122,11.5
+2025-05,Luotettavuus,10,122,8.2
+2025-05,Avuliaisuus,7,122,5.7
+2025-06,Ystävällisyys,78,114,68.4
+2025-06,Nopeus & täsmällisyys,70,114,61.4
+2025-06,Ammattitaito,32,114,28.1
+2025-06,Tehokkuus & reippaus,36,114,31.6
+2025-06,Helppous & sujuvuus,33,114,28.9
+2025-06,Huolellisuus,10,114,8.8
+2025-06,Joustavuus,2,114,1.8
+2025-06,Viestintä,9,114,7.9
+2025-06,Hinta,10,114,8.8
+2025-06,Luotettavuus,8,114,7.0
+2025-06,Avuliaisuus,6,114,5.3
+2025-07,Ystävällisyys,61,107,57.0
+2025-07,Nopeus & täsmällisyys,62,107,57.9
+2025-07,Ammattitaito,36,107,33.6
+2025-07,Tehokkuus & reippaus,35,107,32.7
+2025-07,Helppous & sujuvuus,39,107,36.4
+2025-07,Huolellisuus,10,107,9.3
+2025-07,Joustavuus,6,107,5.6
+2025-07,Viestintä,7,107,6.5
+2025-07,Hinta,10,107,9.3
+2025-07,Luotettavuus,12,107,11.2
+2025-07,Avuliaisuus,7,107,6.5
+2025-08,Ystävällisyys,79,121,65.3
+2025-08,Nopeus & täsmällisyys,81,121,66.9
+2025-08,Ammattitaito,36,121,29.8
+2025-08,Tehokkuus & reippaus,29,121,24.0
+2025-08,Helppous & sujuvuus,43,121,35.5
+2025-08,Huolellisuus,8,121,6.6
+2025-08,Joustavuus,7,121,5.8
+2025-08,Viestintä,9,121,7.4
+2025-08,Hinta,12,121,9.9
+2025-08,Luotettavuus,10,121,8.3
+2025-08,Avuliaisuus,16,121,13.2
+2025-09,Ystävällisyys,69,103,67.0
+2025-09,Nopeus & täsmällisyys,60,103,58.3
+2025-09,Ammattitaito,33,103,32.0
+2025-09,Tehokkuus & reippaus,28,103,27.2
+2025-09,Helppous & sujuvuus,26,103,25.2
+2025-09,Huolellisuus,8,103,7.8
+2025-09,Joustavuus,4,103,3.9
+2025-09,Viestintä,7,103,6.8
+2025-09,Hinta,9,103,8.7
+2025-09,Luotettavuus,8,103,7.8
+2025-09,Avuliaisuus,8,103,7.8
+2025-10,Ystävällisyys,38,68,55.9
+2025-10,Nopeus & täsmällisyys,44,68,64.7
+2025-10,Ammattitaito,27,68,39.7
+2025-10,Tehokkuus & reippaus,16,68,23.5
+2025-10,Helppous & sujuvuus,19,68,27.9
+2025-10,Huolellisuus,5,68,7.4
+2025-10,Joustavuus,2,68,2.9
+2025-10,Viestintä,2,68,2.9
+2025-10,Hinta,4,68,5.9
+2025-10,Luotettavuus,3,68,4.4
+2025-10,Avuliaisuus,4,68,5.9
+2025-11,Ystävällisyys,45,68,66.2
+2025-11,Nopeus & täsmällisyys,43,68,63.2
+2025-11,Ammattitaito,17,68,25.0
+2025-11,Tehokkuus & reippaus,21,68,30.9
+2025-11,Helppous & sujuvuus,17,68,25.0
+2025-11,Huolellisuus,5,68,7.4
+2025-11,Joustavuus,1,68,1.5
+2025-11,Viestintä,3,68,4.4
+2025-11,Hinta,4,68,5.9
+2025-11,Luotettavuus,5,68,7.4
+2025-11,Avuliaisuus,4,68,5.9
+2025-12,Ystävällisyys,41,69,59.4
+2025-12,Nopeus & täsmällisyys,37,69,53.6
+2025-12,Ammattitaito,19,69,27.5
+2025-12,Tehokkuus & reippaus,12,69,17.4
+2025-12,Helppous & sujuvuus,27,69,39.1
+2025-12,Huolellisuus,6,69,8.7
+2025-12,Joustavuus,4,69,5.8
+2025-12,Viestintä,6,69,8.7
+2025-12,Hinta,5,69,7.2
+2025-12,Luotettavuus,3,69,4.3
+2025-12,Avuliaisuus,8,69,11.6
+2026-01,Ystävällisyys,33,58,56.9
+2026-01,Nopeus & täsmällisyys,30,58,51.7
+2026-01,Ammattitaito,18,58,31.0
+2026-01,Tehokkuus & reippaus,11,58,19.0
+2026-01,Helppous & sujuvuus,14,58,24.1
+2026-01,Huolellisuus,4,58,6.9
+2026-01,Joustavuus,2,58,3.4
+2026-01,Viestintä,1,58,1.7
+2026-01,Hinta,6,58,10.3
+2026-01,Luotettavuus,4,58,6.9
+2026-01,Avuliaisuus,1,58,1.7
+2026-02,Ystävällisyys,39,55,70.9
+2026-02,Nopeus & täsmällisyys,33,55,60.0
+2026-02,Ammattitaito,12,55,21.8
+2026-02,Tehokkuus & reippaus,11,55,20.0
+2026-02,Helppous & sujuvuus,23,55,41.8
+2026-02,Huolellisuus,4,55,7.3
+2026-02,Joustavuus,4,55,7.3
+2026-02,Viestintä,4,55,7.3
+2026-02,Hinta,8,55,14.5
+2026-02,Luotettavuus,2,55,3.6
+2026-02,Avuliaisuus,2,55,3.6
+2026-03,Ystävällisyys,36,51,70.6
+2026-03,Nopeus & täsmällisyys,38,51,74.5
+2026-03,Ammattitaito,21,51,41.2
+2026-03,Tehokkuus & reippaus,8,51,15.7
+2026-03,Helppous & sujuvuus,14,51,27.5
+2026-03,Huolellisuus,5,51,9.8
+2026-03,Joustavuus,3,51,5.9
+2026-03,Viestintä,5,51,9.8
+2026-03,Hinta,3,51,5.9
+2026-03,Luotettavuus,6,51,11.8
+2026-03,Avuliaisuus,2,51,3.9
+2026-04,Ystävällisyys,41,55,74.5
+2026-04,Nopeus & täsmällisyys,41,55,74.5
+2026-04,Ammattitaito,15,55,27.3
+2026-04,Tehokkuus & reippaus,21,55,38.2
+2026-04,Helppous & sujuvuus,15,55,27.3
+2026-04,Huolellisuus,2,55,3.6
+2026-04,Joustavuus,0,55,0.0
+2026-04,Viestintä,1,55,1.8
+2026-04,Hinta,2,55,3.6
+2026-04,Luotettavuus,5,55,9.1
+2026-04,Avuliaisuus,5,55,9.1
+2026-05,Ystävällisyys,20,32,62.5
+2026-05,Nopeus & täsmällisyys,18,32,56.2
+2026-05,Ammattitaito,8,32,25.0
+2026-05,Tehokkuus & reippaus,7,32,21.9
+2026-05,Helppous & sujuvuus,8,32,25.0
+2026-05,Huolellisuus,2,32,6.2
+2026-05,Joustavuus,0,32,0.0
+2026-05,Viestintä,6,32,18.8
+2026-05,Hinta,3,32,9.4
+2026-05,Luotettavuus,4,32,12.5
+2026-05,Avuliaisuus,1,32,3.1
+2026-06,Ystävällisyys,8,17,47.1
+2026-06,Nopeus & täsmällisyys,7,17,41.2
+2026-06,Ammattitaito,8,17,47.1
+2026-06,Tehokkuus & reippaus,2,17,11.8
+2026-06,Helppous & sujuvuus,7,17,41.2
+2026-06,Huolellisuus,3,17,17.6
+2026-06,Joustavuus,1,17,5.9
+2026-06,Viestintä,2,17,11.8
+2026-06,Hinta,4,17,23.5
+2026-06,Luotettavuus,1,17,5.9
+2026-06,Avuliaisuus,0,17,0.0
+2026-07,Ystävällisyys,3,8,37.5
+2026-07,Nopeus & täsmällisyys,5,8,62.5
+2026-07,Ammattitaito,3,8,37.5
+2026-07,Tehokkuus & reippaus,1,8,12.5
+2026-07,Helppous & sujuvuus,2,8,25.0
+2026-07,Huolellisuus,0,8,0.0
+2026-07,Joustavuus,0,8,0.0
+2026-07,Viestintä,2,8,25.0
+2026-07,Hinta,2,8,25.0
+2026-07,Luotettavuus,2,8,25.0
+2026-07,Avuliaisuus,0,8,0.0
+2026-08,Ystävällisyys,5,16,31.2
+2026-08,Nopeus & täsmällisyys,8,16,50.0
+2026-08,Ammattitaito,2,16,12.5
+2026-08,Tehokkuus & reippaus,5,16,31.2
+2026-08,Helppous & sujuvuus,6,16,37.5
+2026-08,Huolellisuus,0,16,0.0
+2026-08,Joustavuus,0,16,0.0
+2026-08,Viestintä,2,16,12.5
+2026-08,Hinta,2,16,12.5
+2026-08,Luotettavuus,1,16,6.2
+2026-08,Avuliaisuus,0,16,0.0
+2026-09,Ystävällisyys,8,15,53.3
+2026-09,Nopeus & täsmällisyys,7,15,46.7
+2026-09,Ammattitaito,8,15,53.3
+2026-09,Tehokkuus & reippaus,1,15,6.7
+2026-09,Helppous & sujuvuus,3,15,20.0
+2026-09,Huolellisuus,0,15,0.0
+2026-09,Joustavuus,1,15,6.7
+2026-09,Viestintä,0,15,0.0
+2026-09,Hinta,2,15,13.3
+2026-09,Luotettavuus,2,15,13.3
+2026-09,Avuliaisuus,2,15,13.3

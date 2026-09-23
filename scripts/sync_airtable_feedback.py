@@ -111,7 +111,7 @@ def to_int(v) -> int | None:
 
 def build_row(rec: dict) -> tuple[dict, int]:
     f = rec.get("fields", {}) or {}
-    row: dict = {"record_id": rec["id"]}
+    row: dict = {"record_id": rec["id"], "created_at": rec.get("createdTime")}
     for src, col in FIELD_MAP.items():
         if src in f:
             row[col] = f[src]
@@ -134,7 +134,10 @@ def build_row(rec: dict) -> tuple[dict, int]:
         elif col in row:
             row[col] = None
 
-    # Last Modified is 100% populated; `Month` is 21.8% filled and inconsistent, so it is unused.
+    # createdTime (from the API envelope, not a user field) is the real response date and is
+    # complete on every row. `Last Modified` is kept only as a bulk-edit tripwire: an edit in
+    # 2025-11 re-stamped four months of rows into it, hiding 2025-02/03/09/10 entirely.
+    # `Month` is 21.8% filled and inconsistent ("elokuu 2025" vs a bare "joulukuu") -- unused.
     lm = f.get("Last Modified")
     row["submitted_at"] = lm or None
     row["scrub_hits"] = hits
