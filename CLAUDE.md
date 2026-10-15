@@ -114,3 +114,47 @@ defaulting to the repo root un-gitignored.
 - **One fix at a time.** Verify each change (API curl, workflow logic review, reconciliation).
 - **Never put secrets in files** — including docs, workflow JSON committed to git, or chat.
 - **Diagnose before patching** — separate API limits, transform bugs, and dashboard filter mistakes.
+
+## Orchestra — several sessions at once (say which part you play, every reply)
+
+Several Claude Code sessions may work on this repo at the same time, each in its own git
+worktree (`.claude/worktrees/<name>/`, one per task) — the system is
+[docs/orchestra.md](docs/orchestra.md). The base branch is `ORCHESTRA_BASE` as
+`scripts/orchestra/orchestra-conf.sh` resolves it: each developer has their own long-lived
+branch (`ORCHESTRA_DEVS` in `.orchestra.conf`, e.g. `dev-alex`), pinned per machine in the
+gitignored `.orchestra.local`. **In this repo `ORCHESTRA_DEVS` is empty** — a single developer,
+so players branch straight from the shared base.
+
+**The shared branch is `integration/merge-claude-cursor`, not `main` — there is no `main`.**
+And nothing deploys from git: migrations are applied to live Supabase by running
+`scripts/apply_supabase_migration.py`, and N8N workflows are imported through the N8N UI.
+So a merge changes no production system; **running a script does**. Treat the gate as the
+only automated check that exists — this repo has no CI.
+
+**First line of every reply is the sign-on.** If `pwd` is under `.claude/worktrees/` you are a
+**player**: `🎼 Orchestra · player <name> · lane: <lane> · branch <name>` (the lane is in
+`.claude/lane`). Otherwise, in the main checkout, read `.claude/conductor` and compare it with
+your own session name (the first line of `ListAgents`): if it matches, sign on
+`🎼 Orchestra · conductor · <branch> · N players open`; if it does not, or the file is missing,
+sign on `🎼 Orchestra · bystander · main checkout — the conductor is <name>; I change nothing
+here` and do exactly that: no edits, no merges, no pushes, no player opening — answer questions
+only. The baton moves only through `/conductor`, which asks the user for it in that tab; never
+write `.claude/conductor` any other way. Two conductors on one checkout is the collision this
+whole system exists to prevent. No sign-on is how the user knows a session is not on the
+system; do not skip it.
+
+- A **player** edits only inside its lane, commits only on its own branch, never merges, never
+  pushes; if the task needs a file outside the lane, say so and stop. It runs whatever it runs
+  from its own folder on the port in its `.claude/port`. It keeps `.claude/status` current
+  (`phase:` / `doing:` / `updated:`) at every phase change — planning → building → gate →
+  walk-ready → walked → committed, or blocked — *before* telling the user: the conductor's
+  board reads it, and a stale line is a lie.
+- The **conductor** acts on plain words, not slash commands — its procedures are
+  [docs/orchestra-desk.md](docs/orchestra-desk.md); **if that page is not in your context,
+  read it before you do any of this.** New work is talked through in the conductor's tab; once
+  a task is one sentence and one lane, the conductor hands the user two boxes to paste into a
+  new tab — the `/player` line (auto mode) and the task brief (plan mode). It merges players'
+  branches into the base branch one at a time, runs the gate, pushes — and writes no feature
+  code while players are open. Notices flow one way, conductor → player: a player acts on one,
+  says so, and never messages back — every question goes to the user, in the player's tab.
+- Every commit, merge, push and worktree removal is its own question to the user.

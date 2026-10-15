@@ -14,3 +14,13 @@ deleted_orders_backup_*.json
 
 # Supabase CLI local link state
 supabase/.temp/
+
+# ---- Orchestra ----
+# HUOM: kitin snippetissä on rivi `!.claude/settings.json`, joka on JÄTETTY POIS.
+# Se tiedosto sisältää elävän N8N API -avaimen ja tämä repo on julkinen. SETUP_PROMPT sanoo
+# lisäämään `!`-poikkeuksen vain sille mikä on committoitu tänään, eikä `.claude/`-kansiosta
+# ole committoitu mitään (`git ls-files .claude` = 0 riviä). Pelaajat saavat tiedoston
+# `.orchestra.conf`in ORCHESTRA_COPY_FILES-listan kautta, eivät versionhallinnasta.
+.claude/*
+!.claude/commands/
+.orchestra.local
